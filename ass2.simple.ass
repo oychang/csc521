@@ -6,24 +6,31 @@
 // Setup an array where we can store pointers to our interrupt handling funcs.
 // There are only 14 interrupts in our computer, but we round up.
 interrupt_vector: .space 16
+
 // The software queue where we store the characters of a single line of input.
 // The number designated here specifies words. There are four chars per word.
 // Thus, this includes space for 128*4 = 512 characters, a sane line limit.
 character_buffer: .space 128
+
 // A reserved word of memory where for use with the $TERMINC & PERI commands
-// to store a single character briefly. Possibly unnecessary.
+// to store a single character briefly.
 character_scratch: .space 1
+
 // The index of character_buffer that we should put the next character in.
 character_pointer: .data 0
+
 // The index of character_buffer that has not been read out yet.
 character_read_pointer: .data 0
+
 // Control structures for reading and writing out.
 // Assume that we only want to collect a character at a time since that is when
 // the keyboard interrupt is triggered.
 control_in: .data $terminc, 1, 0
 // Used solely for outputting error messages and to test use.
-// The zeros are not meant to be used. They will be replaced at print time.
+// The zeros are not meant to be used; those instruction parts are dynamic.
 control_out: .data $termoutc, 0, 0
+
+// Error Codes
 code2: .string "ERR_READ_PARAMS" // code -2: problem reading the control struct
 code2_len: .data 15
 code5: .string "ERR_MEMORY" // code -5: problem storing the characters in memory
@@ -67,6 +74,37 @@ pcl_loop:                           //     for (i = 0; i < LINE_LENGTH; i++)
       jump  pcl_loop
 pcl_done:
       ret                           //     return; }
+
+// Used to print a 32-bit number (positive or negative).
+// Taken from assignment 1, slightly modified to deal with negatives.
+printint:                     // void print(int N) {
+      push    FP
+      load    FP, SP
+      sub     SP, 2           // int Q, R;
+
+      load    R1, [FP+2]      // Q = N / 10;
+      jpos    R1, pr_is_pos   // if (N < 0) {
+      type    '-'             // putchar('-');
+      mul     R1, -1          // N *= -1; }
+      store   R1, [FP+2]
+pr_is_pos:
+      div     R1, 10
+      store   R1, [FP-1]
+      load    R2, R1          // R = N - Q * 10;
+      mul     R2, 10
+      rsub    R2, [FP+2]
+      store   R2, [FP-2]
+      compz   R1              // if (Q > 0) print(Q);
+      jcond   LEQ, pr_leq
+      push    R1
+      call    printint
+pr_leq:
+      load    R2, [FP-2]      // printf("%d", R);
+      add     R2, '0'
+      type    R2
+      load    SP, FP          // }
+      pop     FP
+      ret
 
 // When we call a PERI instruction, the first argument holds a 0 or a negative
 // error code, also shown with an active ERR flag. For $TERMINC, we detect
@@ -175,7 +213,7 @@ getchar_nw:                               // char getchar_nw() {
       load  r1, r2                        //             c = CHR_BUFF[CHR_READ_PTR];
       inc   [character_read_pointer]      //             CHR_READ_PTR++; } }
 gcnw_else:
-      store r1, [fp+2]                    //     return c; }
+      store r1, [sp+1]                    //     return c; }
       ret
 
 // This is the blocking version of getchar(). It just pauses until something
@@ -208,36 +246,38 @@ backchar:                                // void backchar(char c) {
 // Uses getchar() and by extension getchar_nw(). Converts an ASCII
 // integer to a signed 32-bit integer. Acts like atoi().
 // TODO: add check in range 0-9
-getint:                      // int getint() {
-                             //     int mul, sum;
-      call  getchar
-      load  r4, 1            //     mul = 1;
-      load  r2, r12          //     sum = getchar();
-      comp  r2, '-'          //     if (sum == '-') {
-      jcond neq, gi_loop_pre
-      load  r4, -1           //         mul = -1;
-      load  r2, '0'          //         sum = '0'; }
-gi_loop_pre:
-      sub   r2, '0'          //     sum -= '0'
-      load  r3, -1           //     int i = -1;
-gi_loop:
-      call  getchar_nw       //     while ((i = getchar_nw()) != 0) {
-      load  r3, r12
-      sub   r3, '0'
-      jneg  r3, gi_loop_end
-      mul   r2, 10           //         sum *= 10;
-      add   r2, r3           //         sum += i; }
-      jump  gi_loop
-gi_loop_end:
-      mul   r2, r4           //     return sum * mul; }
-      load  r12, r2
-      ret
+//getint:                      // int getint() {
+//                             //     int mul, sum;
+//      call  getchar
+//      load  r4, 1            //     mul = 1;
+//      load  r2, r12          //     sum = getchar();
+//      comp  r2, '-'          //     if (sum == '-') {
+//      jcond neq, gi_loop_pre
+//      load  r4, -1           //         mul = -1;
+//      load  r2, '0'          //         sum = '0'; }
+//gi_loop_pre:
+//      sub   r2, '0'          //     sum -= '0'
+//      load  r3, -1           //     int i = -1;
+//gi_loop:
+//      call  getchar_nw       //     while ((i = getchar_nw()) != 0) {
+//      load  r3, r12
+//      sub   r3, '0'
+//      jneg  r3, gi_loop_end
+//      mul   r2, 10           //         sum *= 10;
+//      add   r2, r3           //         sum += i; }
+//      jump  gi_loop
+//gi_loop_end:
+//      mul   r2, r4           //     return sum * mul; }
+//      load  r12, r2
+//      ret
 //=============================================================================
 //================================== MAIN =====================================
 //=============================================================================
 main:
       call  setup_interrupts
+      dec   sp
       call  getchar_nw
+      call  printint
       //call  test_program
       halt
 //=============================================================================
@@ -246,30 +286,30 @@ main:
 // This is a simple adding program that demonstrates all of the user
 // program functions.
 // getint() depends on getchar() depends on getchar_nw()
-test_program:          // void test_program() {
-      sub   sp, 3      //       int a, b, c;
-      call  getint     //       a = getint(); // first in prompt
-      call  getint     //       b = getint(); // second in prompt
-      push  '2'        //       backchar('2');
-      call  backchar
-      call  getint     //       c = getint(); // should get 2
-      load  r1, [sp+3] //       printf("%d\n", (a+b)*c);
-      add   r1, [sp+2]
-      mul   r1, [sp+1]
-      push  r1
-      //call  printint
-
-      ret              //       return; }
-
-//      load  r5, 0
-//      call  getint
-//      add r5, r12
-//      call getint
-//      add r5, r12
-//      load r12, '2'
-//      call backchar
-//      load r12, '0' // make sure we actually load from character buffer
-//      call getint
-//      mul r5, r12
-//      break         // R5 = (in1 + in2) * 2
+//test_program:          // void test_program() {
+//      sub   sp, 3      //       int a, b, c;
+//      call  getint     //       a = getint(); // first in prompt
+//      call  getint     //       b = getint(); // second in prompt
+//      push  '2'        //       backchar('2');
+//      call  backchar
+//      call  getint     //       c = getint(); // should get 2
+//      load  r1, [sp+3] //       printf("%d\n", (a+b)*c);
+//      add   r1, [sp+2]
+//      mul   r1, [sp+1]
+//      push  r1
+//      //call  printint
+//
+//      ret              //       return; }
+//
+////      load  r5, 0
+////      call  getint
+////      add r5, r12
+////      call getint
+////      add r5, r12
+////      load r12, '2'
+////      call backchar
+////      load r12, '0' // make sure we actually load from character buffer
+////      call getint
+////      mul r5, r12
+////      break         // R5 = (in1 + in2) * 2
 
