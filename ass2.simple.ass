@@ -53,11 +53,19 @@ setup_interrupts:
 // The process of clearing a character after backspace has been pressed.
 // We move the cursor back a column, but the old character is still there.
 // So we move back, print a space, and move back again.
-process_backspace: // void process_backspace() {
-      type  '\b'   //     putchar('\b');
-      type  ' '    //     putchar(' ');
-      type  '\b'   //     putchar('\b');
-      ret          //     return; }
+// Null index to avoid triggering our newline heuristic.
+process_backspace:                  // void process_backspace() {
+      compz [character_pointer]     // if (CHARACTER_POINTER > 0) {
+      jcond leq, pb_else
+      dec   [character_pointer]     //     CHARACTER_POINTER--; }
+pb_else:
+      type  '\b'                    // putchar('\b');
+      type  ' '                     // putchar(' ');
+      type  '\b'                    // putchar('\b');
+      load  r0, 0                   // CHR_BUFF[CHARACTER_POINTER] = 0;
+      load  r3, [character_pointer]
+      stch  r3, character_buffer
+      ret                           //     return; }
 
 // What happens after pressing CTRL+U. Simply echoing the chracter does not
 // clear the line like a backspace, so we have to clear every character
@@ -73,6 +81,7 @@ pcl_loop:                           //     for (i = 0; i < LINE_LENGTH; i++)
       inc   r1
       jump  pcl_loop
 pcl_done:
+
       ret                           //     return; }
 
 // Used to print a 32-bit number (positive or negative).
@@ -154,22 +163,22 @@ keyboard_interrupt_handler:
       store r2, [r1 + 2]
       peri  r11, r1                    // Use R11 as convention to store code.
       jcond err, keyboard_input_error  // Halt on error.
-      load  r0, [character_scratch]    // Store in less volatile,
-      load  r3, [character_pointer]    // more compressed location.
-      stch  r3, character_buffer
-      inc   [character_pointer]
+      load  r0, [character_scratch]
 case_backspace:                        // Decide how to echo the keypress.
       comp  r0, 8                      // ASCII Backspace
       jcond neq, case_del
       call  process_backspace
+      jump  kih_done
 case_del:                              // My terminal does not do backspaces
       comp  r0, 0x7f                   // correctly, instead opting to
       jcond neq, case_nb               // send some delete character.
       call  process_backspace          // Let's humor it.
+      jump  kih_done
 case_nb:                               // ASCII ^U
       comp  r0, 21
       jcond neq, case_newline
       call  process_clear_line
+      jump  kih_done
 case_newline:                          // ASCII Enter
       comp  r0, '\n'
       jcond neq, case_nctrlu
@@ -180,13 +189,19 @@ case_newline:                          // ASCII Enter
       stch  r3, character_buffer
       store r1, [character_pointer]
       store r1, [character_read_pointer]
+      jump  kih_done
 case_nctrlu:
       comp  r0, 32                     // Check to see if code is in range
       jcond lss, kih_done              // [32, 126], the printable range.
       comp  r0, 126                    // If not printed, still stored in buff.
       jcond gtr, kih_done
+      load  r0, [character_scratch]    // Store in less volatile,
+      load  r3, [character_pointer]    // more compressed location.
+      stch  r3, character_buffer
+      inc   [character_pointer]
       load  r1, [character_scratch]    // Reload from our character scratch.
       type  r1
+      jump  kih_done
 kih_done:
       iret
 //=============================================================================
@@ -276,20 +291,20 @@ main:
 //=============================================================================
 // This is a simple adding program that demonstrates all of the user
 // program functions.
-// getint() depends on getchar() depends on getchar_nw()
+// getint() depends on getchar() depends on getchar_nw() depends on kbhand
 test_program:          // void test_program() {
       call  getint     //       printf("%d\n", getint());
       push  r12
       call  printint
+      type  '\n'
       inc   sp
 
-      load  r12, '2'
-      call  backchar
+      load  r12, '2'   //     backchar('2');
+      call  backchar   //     printf("%d\n", getint());
       call  getint
       push  r12
       call  printint
+      type  '\n'
       inc   sp
 
       ret              //       return; }
-
-
