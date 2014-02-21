@@ -1,0 +1,35 @@
+
+In assembly language, design and implement an interrupt based keyboard
+input system.
+
+This should include a buffer large enough to hold a long line of input.
+The characters should be efficiently packed, four in each 32 bit word.
+
+The IV$KEYBD interrupt must be enabled and trapped. When it is received,
+the $TERMINC PERI command should be used to receive the newly typed
+characters and they should be transferred to the buffer.
+
+This system must properly process at least:
+  + the backspace key
+  + correctly echoing user input
+  + control-U to erase the whole current line
+
+For user program access, you must provide the following functions:
+  getchar_nw()  [nw = no wait]
+     If a whole \n-terminated line is available in the buffer,
+     remove and return the first character. If a line is not
+     available, immediately return -1.
+  getchar()
+     Wait until a whole line is avaiable in the buffer, then
+     (using getchar_nw) return one character
+  backchar(c)
+     Reverses the effect of c = getchar(). Puts a character back
+     at the front of the buffer so it may be re-read later.
+  getint()
+     Uses getchar() to read a whole decimal integer and return
+     its value as a 32 bit word.
+
+Make a good test that clearly demonstrates your implementation working.
+
+submit code and screen-shots.
+

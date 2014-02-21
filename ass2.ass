@@ -1,0 +1,161 @@
+      .makeexe   // Assignment #2, 20 February 2014, Oliver Chang
+      jump main  // An Interrupt-based Input System
+//=============================================================================
+//=============================================================================
+interrupt_vector:
+      .space 16
+character_scratch:
+      .space 1
+character_pointer:
+      .data 1
+character_buffer:
+      .space 128
+control_in:
+      .data $terminc
+      .data 1
+      .data 0
+control_out:
+      .data $termoutc
+      .data 0
+      .data 0
+code2:
+      .string "ERR_READ_PARAMS" // problem reading the control struct
+code2_len: .data 15
+code5:
+      .string "ERR_MEMORY" // problem storing the characters in memory
+code5_len: .data 10
+//=============================================================================
+//=============================================================================
+// void process_backspace() {
+//     putchar('\b');
+//     putchar(' ');
+//     putchar('\b');
+//     return; }
+process_backspace:
+      type  '\b'
+      type  ' '
+      type  '\b'
+      ret
+
+// void process_clear_line() {
+//
+//     int i;
+//     for (i = 0; i < LINE_LENGTH; i++)
+//         putchar('\b');
+//     return; }
+process_clear_line:
+      load  R1, 0
+      load  R2, [character_pointer]
+      load r3, r2
+      add r3, '0'
+      type r3
+pcl_loop:
+      comp  R1, R2
+      jcond GEQ, pcl_done
+      type  '\b'
+      inc   R1
+      jump  pcl_loop
+pcl_done:
+      ret
+
+// void keyboard_input_error() {
+//     if (ERROR_REGISTER == -2)
+//         printf(CODE2);
+//     else
+//         printf(CODE5);
+//     putchar('\n');
+//     exit(1); }
+keyboard_input_error:
+      comp r11, -2
+      jcond neq, kie_else
+      load r1, code2_len
+      load r2, control_out
+      load r3, code2
+      store r1, [r2 + 1]
+      store r3, [r2 + 2]
+      peri r0, r2
+      jump kie_halt
+kie_else:
+      load r1, code5_len
+      load r2, control_out
+      load r3, code5
+      store r1, [r2 + 1]
+      store r3, [r2 + 2]
+      peri r0, r2
+      jump kie_halt
+kie_halt:
+      type '\n'
+      halt
+//=============================================================================
+//=============================================================================
+// keyboard handler
+keyboard_interrupt_handler:
+      load r1, control_in
+      load r2, character_scratch
+      store r2, [r1 + 2]
+      peri r11, r1
+      jcond ERR, keyboard_input_error
+// so now we have a word of input that is occupied by a single character
+// we'll use stch to efficiently pack that character in a buffer
+// the stch takes 3 arguments in effect: 2 explicit and 1 implicit, the
+// scratch register
+//
+// setup the one character we've gotten
+      load r0, [character_scratch]
+// get the index into the array of existing characters
+      load r10, [character_pointer]
+// store the character
+      stch r10, character_buffer
+// increment and store the character index
+      inc r10
+      store r10, character_pointer
+
+// if (char == '\b' || char == 0x7f)
+      comp r0, 8
+      jcond neq, check_del
+      call process_backspace
+check_del:
+      comp r0, 0x7f
+      jcond neq, case_nb
+      call process_backspace
+// else if (char == '^U')
+case_nb:
+      comp r0, 21
+      jcond neq, case_newline
+      call process_clear_line
+// else if (char == '\n')
+case_newline:
+      comp r0, '\n'
+      jcond neq, case_nctrlu
+      type '\n'
+// else
+case_nctrlu: // [32, 126]
+      comp r0, 32
+      jcond lss, kih_done
+      comp r0, 126
+      jcond gtr, kih_done
+      load r1, [character_scratch]
+      type r1
+kih_done:
+      iret
+//=============================================================================
+//=============================================================================
+// takes ~14 words and uses one each as the location of an interrupt handler
+// it loads into each location the address of a handler
+// it does that by using a builtin integer offset from the beginning of the
+// vector, as denoted by `IV$...`
+// should only be called once
+setup_interrupts:
+      load  R1, interrupt_vector
+      setsr R1, $INTVEC
+      load  R2, keyboard_interrupt_handler
+      store R2, [R1 + IV$KEYBD]
+      load  R1, 0
+      setfl R1, $IP
+      ret
+//=============================================================================
+//=============================================================================
+main:
+      call  setup_interrupts
+      wait
+      halt
