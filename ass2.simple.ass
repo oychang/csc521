@@ -192,13 +192,13 @@ kih_done:
 //=============================================================================
 //============================= USER FUNCTIONS ================================
 //=============================================================================
-// NB: To avoid mucking with stacks, these functions store/expect data on R12.
-//
 // Gets the next character in the software buffer without waiting, if there
 // is a full line available, otherwise -1. The heuristic we use to see if
 // the character pointer is at the front and the current character is not null.
 // That means the enter button was pressed, resetting the position of the
 // character pointer.
+//
+// The use of the stack is crude in these.
 // Rather than allocating memory for local variables, we simply store in the
 // return location since this calls no functions.
 getchar_nw:                               // char getchar_nw() {
@@ -220,18 +220,15 @@ gcnw_else:
 // exciting happens.
 // We have to allocate space for getchar_nw()'s return, unlike in that function.
 getchar:                      // char getchar() {
-      push  fp                //     char c;
-      load  fp, sp
-      dec   sp
+      dec   sp                //     char c;
       call  getchar_nw        //     while ((c = getchar_nw()) < 0)
-      load  r1, [fp-1]
+      pop   r1
       jpos  r1, gc_loop_end
       pause                   //         sleep(50);
       jump  getchar
 gc_loop_end:
-      store r1, [fp+2]        //     return c; }
-      load  sp, fp
-      pop   fp
+      break
+      store r1, [sp+1]        //     return c; }
       ret
 
 // Puts a taken character back into the front of the buffer.
@@ -239,45 +236,47 @@ gc_loop_end:
 backchar:                                // void backchar(char c) {
       dec   [character_read_pointer]     //     CHR_READ_PTR--;
       load  r1, [character_read_pointer]
-      load  r0, [FP+2]                   //     CHARACTER_BUFF[CHR_READ_PTR] = c;
+      load  r0, [sp+1]                   //     CHARACTER_BUFF[CHR_READ_PTR] = c;
       stch  r1, character_buffer
       ret                                //     return; }
 
 // Uses getchar() and by extension getchar_nw(). Converts an ASCII
 // integer to a signed 32-bit integer. Acts like atoi().
+// Uses proper method of variables.
 // TODO: add check in range 0-9
-//getint:                      // int getint() {
-//                             //     int mul, sum;
-//      call  getchar
-//      load  r4, 1            //     mul = 1;
-//      load  r2, r12          //     sum = getchar();
-//      comp  r2, '-'          //     if (sum == '-') {
-//      jcond neq, gi_loop_pre
-//      load  r4, -1           //         mul = -1;
-//      load  r2, '0'          //         sum = '0'; }
-//gi_loop_pre:
-//      sub   r2, '0'          //     sum -= '0'
-//      load  r3, -1           //     int i = -1;
-//gi_loop:
-//      call  getchar_nw       //     while ((i = getchar_nw()) != 0) {
-//      load  r3, r12
-//      sub   r3, '0'
-//      jneg  r3, gi_loop_end
-//      mul   r2, 10           //         sum *= 10;
-//      add   r2, r3           //         sum += i; }
-//      jump  gi_loop
-//gi_loop_end:
-//      mul   r2, r4           //     return sum * mul; }
-//      load  r12, r2
-//      ret
+getint:                      // int getint() {
+                             //     int mul, sum;
+      call  getchar
+      load  r4, 1            //     mul = 1;
+      load  r2, r12          //     sum = getchar();
+      comp  r2, '-'          //     if (sum == '-') {
+      jcond neq, gi_loop_pre
+      load  r4, -1           //         mul = -1;
+      load  r2, '0'          //         sum = '0'; }
+gi_loop_pre:
+      sub   r2, '0'          //     sum -= '0'
+      load  r3, -1           //     int i = -1;
+gi_loop:
+      call  getchar_nw       //     while ((i = getchar_nw()) != 0) {
+      load  r3, r12
+      sub   r3, '0'
+      jneg  r3, gi_loop_end
+      mul   r2, 10           //         sum *= 10;
+      add   r2, r3           //         sum += i; }
+      jump  gi_loop
+gi_loop_end:
+      mul   r2, r4           //     return sum * mul; }
+      load  r12, r2
+      ret
 //=============================================================================
 //================================== MAIN =====================================
 //=============================================================================
 main:
       call  setup_interrupts
       dec   sp
-      call  getchar_nw
+      call  getint
       call  printint
+      inc   sp
       //call  test_program
       halt
 //=============================================================================
