@@ -1,4 +1,4 @@
-      .makeexe   // Assignment #2, 20 February 2014, Oliver Chang
+      .makeexe   // Assignment #2.1, 24 March 2014, Oliver Chang
       jump main  // An Interrupt-based Input System
 //=============================================================================
 //============================= DATA STRUCTURES ===============================
@@ -12,19 +12,18 @@ interrupt_vector: .space 16
 // Thus, this includes space for 128*4 = 512 characters, a sane limit.
 character_buffer: .space 128
 
-// A reserved word of memory where for use with the $TERMINC & PERI commands
-// to store a single character briefly.
+// A reserved word of memory where for use with the $TERMINC & PERI commands.
+// TODO: embiggen
 character_scratch: .space 1
 
-// The index of character_buffer that we should put the next character in.
-character_pointer: .data 0
-
-// The index of character_buffer that has not been read out yet.
-character_read_pointer: .data 0
+// The next available index in character_buffer that's available for the op.
+writeptr: .data 0
+readptr: .data 0
 
 // Control structures for reading and writing out.
 // Assume that we only want to collect a character at a time since that is when
 // the keyboard interrupt is triggered.
+// TODO: embiggen
 control_in: .data $terminc, 1, 0
 // Used solely for outputting error messages and for practice.
 control_out: .data $termoutc, 0, 0
@@ -54,36 +53,62 @@ setup_interrupts:
 // The process of clearing a character after backspace has been pressed.
 // We move the cursor back a column, but the old character is still there.
 // So we move back, print a space, and move back again.
-// Null index to avoid triggering our newline heuristic.
-process_backspace:                  // void process_backspace() {
-      compz [character_pointer]     //     if (CHARACTER_POINTER > 0)
-      jcond leq, pb_else
-      dec   [character_pointer]     //         CHARACTER_POINTER--;
+// void process_backspace() {
+//       if (readptr == writeptr) return;
+//       else {
+//             int tmp = (writeptr - 1) % 512;
+//             if (buf[tmp] == '\n')
+//                   return;
+//             else {
+//                   putchar('\b');
+//                   putchar(' ');
+//                   putchar('\b');
+//                   writeptr = tmp;
+//             }
+//       }
+//       return;
+// }
+process_backspace:
+      load  r1, [writeptr]
+      comp  r1, [readptr]
+      jcond neq, pb_elif
+      ret
+pb_elif:
+      dec   r1
+      mod   r1, 512
+      comp  r1, '\n'
+      jcond neq, pb_else
+      ret
 pb_else:
-      type  '\b'                    //     putchar('\b');
-      type  ' '                     //     putchar(' ');
-      type  '\b'                    //     putchar('\b');
-      load  r0, 0                   //     CHR_BUFF[CHARACTER_POINTER] = 0;
-      load  r3, [character_pointer]
-      stch  r3, character_buffer
-      ret                           //     return; }
+      type  '\b'
+      type  ' '
+      type  '\b'
+      store r1, [writeptr]
+      ret
 
 // What happens after pressing CTRL+U. Simply echoing the chracter does not
 // clear the line like a backspace, so we have to clear every character
 // that's been in the line before. We do this by calling backspace
 // for the length of the current line.
-process_clear_line:                 // void process_clear_line() {
-      load  r1, 0                   //     int i;
-      load  r2, [character_pointer]
-pcl_loop:                           //     for (i = 0; i < LINE_LENGTH; i++)
-      comp  r1, r2
-      jcond geq, pcl_done
-      call  process_backspace       //         process_backspace();
-      inc   r1
+// void process_clear_line() {
+//       while (true) {
+//             if (tmp == writeptr) return;
+//             else if (buf[(writeptr - 1) % 512]) return;
+//             process_backspace();
+//       }
+// }
+// Implementation is an optimized version that is highly dependent on
+// process_backspace() having the same if-branches and comparisons as
+// the pseudo-code above.
+process_clear_line:
+      load  r1, 0
+      setfl r1, $z
+pcl_loop:
+      jcond neq, pcl_done
+      call  process_backspace
       jump  pcl_loop
 pcl_done:
-
-      ret                           //     return; }
+      ret
 
 // Used to print a 32-bit number (positive or negative).
 // Taken from assignment 1, slightly modified to deal with negatives.
