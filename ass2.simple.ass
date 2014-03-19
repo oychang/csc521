@@ -26,14 +26,15 @@ character_read_pointer: .data 0
 // Assume that we only want to collect a character at a time since that is when
 // the keyboard interrupt is triggered.
 control_in: .data $terminc, 1, 0
-// Used solely for outputting error messages and to test use.
-// The zeros are not meant to be used; those instruction parts are dynamic.
+// Used solely for outputting error messages and for practice.
 control_out: .data $termoutc, 0, 0
 
 // Error Codes
-code2: .string "ERR_READ_PARAMS" // code -2: problem reading the control struct
+// code -2: problem reading the control struct
+code2: .string "ERR_READ_PARAMS"
 code2_len: .data 15
-code5: .string "ERR_MEMORY" // code -5: problem storing the characters in memory
+// code -5: problem storing the characters in memory
+code5: .string "ERR_MEMORY"
 code5_len: .data 10
 //=============================================================================
 //============================ UTILITY FUNCTIONS ==============================
@@ -55,14 +56,14 @@ setup_interrupts:
 // So we move back, print a space, and move back again.
 // Null index to avoid triggering our newline heuristic.
 process_backspace:                  // void process_backspace() {
-      compz [character_pointer]     // if (CHARACTER_POINTER > 0) {
+      compz [character_pointer]     //     if (CHARACTER_POINTER > 0)
       jcond leq, pb_else
-      dec   [character_pointer]     //     CHARACTER_POINTER--; }
+      dec   [character_pointer]     //         CHARACTER_POINTER--;
 pb_else:
-      type  '\b'                    // putchar('\b');
-      type  ' '                     // putchar(' ');
-      type  '\b'                    // putchar('\b');
-      load  r0, 0                   // CHR_BUFF[CHARACTER_POINTER] = 0;
+      type  '\b'                    //     putchar('\b');
+      type  ' '                     //     putchar(' ');
+      type  '\b'                    //     putchar('\b');
+      load  r0, 0                   //     CHR_BUFF[CHARACTER_POINTER] = 0;
       load  r3, [character_pointer]
       stch  r3, character_buffer
       ret                           //     return; }
@@ -153,10 +154,6 @@ kie_halt:
 // At a high level, we want to get the input character with the PERI command
 // from the hardware input buffer, pack it in the buffer without consuming
 // an entire word per character, and then correctly echo the input.
-// The visible text does not always accurately represents the internal state
-// of the character buffer as delete operations, i.e. \b and ^U are not
-// done on the software buffer. This is so that the software that
-// uses this can decide what to do with it.
 keyboard_interrupt_handler:
       load  r1, control_in             // Get and temporarily store the char.
       load  r2, character_scratch
@@ -193,13 +190,13 @@ case_newline:                          // ASCII Enter
 case_nctrlu:
       comp  r0, 32                     // Check to see if code is in range
       jcond lss, kih_done              // [32, 126], the printable range.
-      comp  r0, 126                    // If not printed, still stored in buff.
+      comp  r0, 126
       jcond gtr, kih_done
       load  r0, [character_scratch]    // Store in less volatile,
       load  r3, [character_pointer]    // more compressed location.
       stch  r3, character_buffer
       inc   [character_pointer]
-      load  r1, [character_scratch]    // Reload from our character scratch.
+      load  r1, [character_scratch]    // Reload character scratch and type.
       type  r1
       jump  kih_done
 kih_done:
@@ -210,12 +207,11 @@ kih_done:
 // Gets the next character in the software buffer without waiting, if there
 // is a full line available, otherwise -1. The heuristic we use to see if
 // the character pointer is at the front and the current character is not null.
-// That means the enter button was pressed, resetting the position of the
+// That means the enter button was pressed, reseting the position of the
 // character pointer.
 //
-// The use of the stack is crude in these.
-// Rather than allocating memory for local variables, we simply store in the
-// return location since this calls no functions.
+// Rather than allocating memory for local variables and returns (which is
+// complexity we don't need too badly), we use registers and hope for the best.
 getchar_nw:                               // char getchar_nw() {
       load  r1, -1                        //     char c = -1;
       load  r2, [character_pointer]       //     if (CHARACTER_POINTER == 0) {
@@ -253,7 +249,6 @@ backchar:                                // void backchar(char c) {
 // Uses getchar() and by extension getchar_nw(). Converts an ASCII
 // integer to a signed 32-bit integer. Acts like atoi().
 // Uses higher-numbered registers to avoid tripping. This is not ideal.
-// TODO: add check in range 0-9
 getint:                      // int getint() {
       load  r5, 1            //     int mul = 1;
       call  getchar
@@ -289,11 +284,10 @@ main:
 //=============================================================================
 //=============================== TEST PROGRAM ================================
 //=============================================================================
-// This is a simple adding program that demonstrates all of the user
-// program functions.
+// This is a simple program that demonstrates all of the user program funs.
 // getint() depends on getchar() depends on getchar_nw() depends on kbhand
 test_program:          // void test_program() {
-      call  getint     //       printf("%d\n", getint());
+      call  getint     //     printf("%d\n", getint());
       push  r12
       call  printint
       type  '\n'
