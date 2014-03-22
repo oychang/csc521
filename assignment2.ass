@@ -9,31 +9,25 @@ interrupt_vector: .space 16
 
 // The software queue where we store the characters of a single line of input.
 // The number designated here specifies words. There are four chars per word.
-// Thus, this includes space for 128*4 = 512 characters, a sane limit.
+// Thus, this includes space for 128*4 = 512 characters.
 character_buffer: .space 128
-
-// A reserved word of memory where for use with the $TERMINC & PERI commands.
-// TODO: embiggen
-character_scratch: .space 1
 
 // The next available index in character_buffer that's available for the op.
 writeptr: .data 0
-readptr: .data 0
+readptr:  .data 0
 
-// Control structures for reading and writing out.
-// Assume that we only want to collect a character at a time since that is when
-// the keyboard interrupt is triggered.
-// TODO: embiggen
-control_in: .data $terminc, 1, 0
-// Used solely for outputting error messages and for practice.
+// Control structure for reading in data with PERI.
+control_in:
+      .data $terminc
+      .data 7 // pack four chars to a word + '\0'; 2 words = 7 chars + null
+      .data 0 // the location of character_scratch...loaded at runtime
+character_scratch: .space 2 // The number of words for use with control_in
+
+// How we output error messages strings
 control_out: .data $termoutc, 0, 0
-
-// Error Codes
-// code -2: problem reading the control struct
-code2: .string "ERR_READ_PARAMS"
+code2: .string "ERR_READ_PARAMS" // code -2; problem reading the control struct
 code2_len: .data 15
-// code -5: problem storing the characters in memory
-code5: .string "ERR_MEMORY"
+code5: .string "ERR_MEMORY" // code -5: problem storing the characters in memory
 code5_len: .data 10
 //=============================================================================
 //============================ UTILITY FUNCTIONS ==============================
@@ -56,7 +50,7 @@ setup_interrupts:
 // void process_backspace() {
 //       if (readptr == writeptr) return;
 //       else {
-//             int tmp = (writeptr - 1) % 512;
+//             int tmp = (writeptr - 1) % (CHR_BUF_LEN * 4);
 //             if (buf[tmp] == '\n')
 //                   return;
 //             else {
@@ -93,7 +87,7 @@ pb_else:
 // void process_clear_line() {
 //       while (true) {
 //             if (tmp == writeptr) return;
-//             else if (buf[(writeptr - 1) % 512]) return;
+//             else if (buf[(writeptr - 1) % (CHR_BUF_LEN * 4)] == '\n') return;
 //             process_backspace();
 //       }
 // }
@@ -179,6 +173,31 @@ kie_halt:
 // At a high level, we want to get the input character with the PERI command
 // from the hardware input buffer, pack it in the buffer without consuming
 // an entire word per character, and then correctly echo the input.
+
+// void keyboard_interrupt_handler() {
+//       setup_terminc_structure(&control_in);
+//       int peri_char_count = peri(&control_in);
+//       if (peri_char_count == -1) {
+//             perror("peri");
+//             exit(1);
+//       }
+//       int i;
+//       for (i = 0; i < peri_char_count; i++) {
+//             char c = ldch(i, &character_scratch);
+//             switch (c) {
+//             case BACKSPACE: case DELETE:
+//                   process_backspace(); break;
+//             case CLEARLINE:
+//                   process_clear_line(); break;
+//             case NEWLINE: case ASCII_PRINTABLE:
+//                   putchar(c); storechar(c); break;
+//             case default:
+//                   break;
+//             }
+//       }
+//       return;
+// }
+
 keyboard_interrupt_handler:
       load  r1, control_in             // Get and temporarily store the char.
       load  r2, character_scratch
