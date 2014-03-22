@@ -182,22 +182,6 @@ kie_halt:
 // At a high level, we want to get the input character with the PERI command
 // from the hardware input buffer, pack it in the buffer without consuming
 // an entire word per character, and then correctly echo the input.
-
-
-
-// switch (c) {
-// case BACKSPACE: case DELETE:
-//       process_backspace(); break;
-// case CLEARLINE:
-//        process_clear_line(); break;
-// case NEWLINE: case ASCII_PRINTABLE:
-//       putchar(c); storechar(c); break;
-// case default:
-//       break;
-// }
-// }
-// return; }
-
 keyboard_interrupt_handler:            // void keyboard_interrupt_handler() {
       peri  r11, r1                    // int peri_char_count = r11 = peri(&control_in);
       jcond err, keyboard_input_error  // if (peri_char_count == -1) {
@@ -208,54 +192,44 @@ kih_loop:
       jcond geq, kih_done
       load  r2, r1                     // char c = r2 = ldch(i, &character_scratch);
       ldch  r2, [character_scratch]
-
-
-
+kih_backspace:
+      comp r2, '\b'
+      jcond neq, kih_delete            // if (c == BACKSPACE || c == DELETE)
+      call process_backspace           //       process_backspace();
+      jump kih_loop_maintenance
+kih_delete:
+      comp r2, 0x7f
+      jcond neq, kih_clearline
+      call process_backspace
+      jump kih_loop_maintenance
+kih_clearline:
+      comp r2, 21                      // else if (c == CLEARLINE)
+      jcond neq, kih_newline
+      call process_clear_line          //        process_clear_line();
+      jump kih_loop_maintenance
+kih_newline:                           // else if (c == (NEWLINE || ASCII_PRINTABLE)) {
+      comp r2, '\n'
+      jcond neq, kih_printable
+      jump kih_print_store
+kih_printable: // check in range [32,126]
+      comp r2, 32
+      jcond lss, kih_loop_maintenance
+      comp r2, 126
+      jcond gtr, kih_loop_maintenance
+      jump kih_print_store
+kih_print_store:
+      type r2                           //      putchar(c);
+      //     storechar(c); }
 //       load  r0, [character_scratch]
-// case_backspace:                        // Decide how to echo the keypress.
-//       comp  r0, 8                      // ASCII Backspace
-//       jcond neq, case_del
-//       call  process_backspace
-//       jump  kih_done
-// case_del:                              // My terminal does not do backspaces
-//       comp  r0, 0x7f                   // correctly, instead opting to
-//       jcond neq, case_nb               // send some delete character.
-//       call  process_backspace          // Let's humor it.
-//       jump  kih_done
-// case_nb:                               // ASCII ^U
-//       comp  r0, 21
-//       jcond neq, case_newline
-//       call  process_clear_line
-//       jump  kih_done
-// case_newline:                          // ASCII Enter
-//       comp  r0, '\n'
-//       jcond neq, case_nctrlu
-//       type  '\n'
-//       load  r1, 0                      // Reset the character pointer.
-//       load  r0, 0                      // Add a null-terminator so we know
-//       load  r3, [character_pointer]    // what's up.
-//       stch  r3, character_buffer
-//       store r1, [character_pointer]
-//       store r1, [character_read_pointer]
-//       jump  kih_done
-// case_nctrlu:
-//       comp  r0, 32                     // Check to see if code is in range
-//       jcond lss, kih_done              // [32, 126], the printable range.
-//       comp  r0, 126
-//       jcond gtr, kih_done
-//       load  r0, [character_scratch]    // Store in less volatile,
-//       load  r3, [character_pointer]    // more compressed location.
+//       load  r3, [character_pointer]
 //       stch  r3, character_buffer
 //       inc   [character_pointer]
-//       load  r1, [character_scratch]    // Reload character scratch and type.
-//       type  r1
-//       jump  kih_done
 
-
+kih_loop_maintenance:
       inc r1
       jump kih_loop
 kih_done:
-      iret
+      iret                             // return; }
 //=============================================================================
 //============================= USER FUNCTIONS ================================
 //=============================================================================
