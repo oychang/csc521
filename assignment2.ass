@@ -27,10 +27,12 @@ control_in:
 character_scratch: .space 2 // The number of words for use with control_in
 
 // How we output error messages strings
+// code -2; problem reading the control struct
+// code -5: problem storing the characters in memory
 control_out: .data $termoutc, 0, 0
-code2: .string "ERR_READ_PARAMS" // code -2; problem reading the control struct
+code2: .string "ERR_READ_PARAMS"
 code2_len: .data 15
-code5: .string "ERR_MEMORY" // code -5: problem storing the characters in memory
+code5: .string "ERR_MEMORY"
 code5_len: .data 10
 //=============================================================================
 //============================ UTILITY FUNCTIONS ==============================
