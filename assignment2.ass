@@ -75,7 +75,9 @@ process_backspace:
 pb_elif:
       dec   r1
       mod   r1, 512
-      comp  r1, '\n'
+      load  r2, r1
+      ldch  r2, character_buffer
+      comp  r2, '\n'
       jcond neq, pb_else
       ret
 pb_else:
@@ -194,6 +196,7 @@ kie_halt:
 //         storechar(c); }
 // return; }
 // void storechar(char c) {
+// TODO: check if we're about to smash into read pointer
 //       buf[writeptr] = c;
 //       writeptr = (writeptr + 1) % (CHR_BUF_LEN * 4); }
 keyboard_interrupt_handler:
