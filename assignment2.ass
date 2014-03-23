@@ -12,14 +12,17 @@ interrupt_vector: .space 16
 // Thus, this includes space for 128*4 = 512 characters.
 character_buffer: .space 128
 
-// The next available index in character_buffer that's available for the op.
+// Write pointer points to the next available free place.
+// If it is pointing to the same place as read pointer, then there can be
+// no more characters input until some are read.
 writeptr: .data 0
-readptr:  .data 0
+// Read pointer points to the last written character, initially -1.
+readptr:  .data -1
 
 // Control structure for reading in data with PERI.
 control_in:
       .data $terminc
-      .data 7 // pack four chars to a word + '\0'; 2 words = 7 chars + null
+      .data 7 // pack four chars to a word + '\0'; 2 words = 7 chars + 1 null
       .data 0 // the location of character_scratch...loaded at runtime
 character_scratch: .space 2 // The number of words for use with control_in
 
@@ -36,41 +39,32 @@ code5_len: .data 10
 // interrupt vector. It does that by using a builtin integer offset from
 // the beginning of the vector, as denoted by `IV$...` Only called once.
 setup_interrupts:
-      // Setup the interrupt vector
+// Setup the interrupt vector
       load  r1, interrupt_vector
       setsr r1, $intvec
-      // Place our handler in the vector
+// Place our handler in the vector
       load  r2, keyboard_interrupt_handler
       store r2, [r1 + iv$keybd]
-      // Enable interrupt processing
+// Enable interrupt processing
       load  r1, 0
       setfl r1, $ip
-      // Setup the control structure for $terminc so we're not constantly
-      // redoing that.
+// Setup the control structure for $terminc with scratch address
       load  r1, control_in
       load  r2, character_scratch
       store r2, [r1 + 2]
-
       ret
 
-// The process of clearing a character after backspace has been pressed.
-// We move the cursor back a column, but the old character is still there.
-// So we move back, print a space, and move back again.
+// Called whenever the backspace key is pressed.
+// See description of pointers for more information.
 // void process_backspace() {
 //       if (readptr == writeptr) return;
 //       else {
-//             int tmp = (writeptr - 1) % (CHR_BUF_LEN * 4);
-//             if (buf[tmp] == '\n')
-//                   return;
+//             int last_idx = (writeptr - 1) % (CHR_BUF_LEN * 4);
+//             if (buf[last_idx] == '\n') return;
 //             else {
-//                   putchar('\b');
-//                   putchar(' ');
-//                   putchar('\b');
-//                   writeptr = tmp;
-//             }
-//       }
-//       return;
-// }
+//                   putchar('\b'); putchar(' '); putchar('\b');
+//                   writeptr = last_idx; } } // nb: circular decrement, not `--`
+//       return; }
 process_backspace:
       load  r1, [writeptr]
       comp  r1, [readptr]
@@ -182,20 +176,37 @@ kie_halt:
 // At a high level, we want to get the input character with the PERI command
 // from the hardware input buffer, pack it in the buffer without consuming
 // an entire word per character, and then correctly echo the input.
-keyboard_interrupt_handler:            // void keyboard_interrupt_handler() {
-      peri  r11, r1                    // int peri_char_count = r11 = peri(&control_in);
-      jcond err, keyboard_input_error  // if (peri_char_count == -1) {
-                                       //       perror("peri"); exit(1); }
-      load  r1, 0                      // int i = r1 = 0;
+// void keyboard_interrupt_handler() {
+// int peri_char_count = r11 = peri(&control_in);
+// if (peri_char_count == -1) {
+//       perror("peri"); exit(1); }
+// int i = r1 = 0;
+// for (i; i >= peri_char_count; i++) {
+//     char c = r2 = ldch(i, character_scratch);
+//     if (c == BACKSPACE || c == DELETE)
+//           process_backspace();
+//     else if (c == CLEARLINE)
+//         process_clear_line();
+//     else if (c == (NEWLINE || ASCII_PRINTABLE)) {
+//         putchar(c);
+//         storechar(c); }
+// return; }
+// void storechar(char c) {
+//       buf[writeptr] = c;
+//       writeptr = (writeptr + 1) % (CHR_BUF_LEN * 4); }
+keyboard_interrupt_handler:
+      peri  r11, r1
+      jcond err, keyboard_input_error
+      load  r1, 0
 kih_loop:
-      comp  r1, r11                    // for (i; i >= peri_char_count; i++) {
+      comp  r1, r11
       jcond geq, kih_done
-      load  r2, r1                     // char c = r2 = ldch(i, &character_scratch);
+      load  r2, r1
       ldch  r2, [character_scratch]
 kih_backspace:
       comp r2, '\b'
-      jcond neq, kih_delete            // if (c == BACKSPACE || c == DELETE)
-      call process_backspace           //       process_backspace();
+      jcond neq, kih_delete
+      call process_backspace
       jump kih_loop_maintenance
 kih_delete:
       comp r2, 0x7f
@@ -203,33 +214,33 @@ kih_delete:
       call process_backspace
       jump kih_loop_maintenance
 kih_clearline:
-      comp r2, 21                      // else if (c == CLEARLINE)
+      comp r2, 21
       jcond neq, kih_newline
-      call process_clear_line          //        process_clear_line();
+      call process_clear_line
       jump kih_loop_maintenance
-kih_newline:                           // else if (c == (NEWLINE || ASCII_PRINTABLE)) {
+kih_newline:
       comp r2, '\n'
       jcond neq, kih_printable
       jump kih_print_store
-kih_printable: // check in range [32,126]
+kih_printable:
       comp r2, 32
       jcond lss, kih_loop_maintenance
       comp r2, 126
       jcond gtr, kih_loop_maintenance
       jump kih_print_store
 kih_print_store:
-      type r2                           //      putchar(c);
-      //     storechar(c); }
-//       load  r0, [character_scratch]
-//       load  r3, [character_pointer]
-//       stch  r3, character_buffer
-//       inc   [character_pointer]
-
+      type r2
+      load r0, r2
+      load r3, [writeptr]
+      stch r3, character_buffer
+      inc r3
+      mod r3, 512
+      store r3, [writeptr]
 kih_loop_maintenance:
       inc r1
       jump kih_loop
 kih_done:
-      iret                             // return; }
+      iret
 //=============================================================================
 //============================= USER FUNCTIONS ================================
 //=============================================================================
