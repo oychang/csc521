@@ -204,7 +204,7 @@ kih_loop:
       comp  r1, r11
       jcond geq, kih_done
       load  r2, r1
-      ldch  r2, [character_scratch]
+      ldch  r2, character_scratch
 kih_backspace:
       comp r2, '\b'
       jcond neq, kih_delete
