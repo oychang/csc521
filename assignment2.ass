@@ -105,7 +105,7 @@ process_clear_line:
       load  r1, 0
       setfl r1, $z
 pcl_loop:
-      jcond neq, pcl_done
+      jcond eql, pcl_done
       call  process_backspace
       jump  pcl_loop
 pcl_done:
