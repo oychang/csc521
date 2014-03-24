@@ -181,6 +181,10 @@ kie_halt:
 // execution. To handle this register bookkeeping, it is important to exit
 // with `iret`.
 //
+// If we're about to smash into the read pointer, just don't increment, i.e.
+// write on the same index until something is read. Assume we writeptr is set
+// to a good location when this handler is called.
+//
 // At a high level, we want to get the input character with the PERI command
 // from the hardware input buffer, pack it in the buffer without consuming
 // an entire word per character, and then correctly echo the input.
@@ -201,9 +205,11 @@ kie_halt:
 //         storechar(c); }
 // return; }
 // void storechar(char c) {
-// TODO: check if we're about to smash into read pointer
-//       buf[writeptr] = c;
-//       writeptr = (writeptr + 1) % (CHR_BUF_LEN * 4); }
+//       int nextidx = (writeptr + 1) % (CHR_BUF_LEN * 4);
+//       if (nextidx == readptr) return;
+//       else {
+//           buf[writeptr] = c;
+//           writeptr = nextidx; } }
 keyboard_interrupt_handler:
       load  r1, control_in
       peri  r11, r1
@@ -243,11 +249,14 @@ kih_printable:
       jump kih_print_store
 kih_print_store:
       type r2
-      load r0, r2
       load r3, [writeptr]
-      stch r3, character_buffer
       inc r3
       mod r3, 512
+      comp r3, [readptr]
+      jcond eql, kih_loop_maintenance
+      load r4, [writeptr]
+      load r0, r2
+      stch r4, character_buffer
       store r3, [writeptr]
 kih_loop_maintenance:
       inc r1
