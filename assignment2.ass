@@ -18,6 +18,10 @@ character_buffer: .space 128
 writeptr: .data 0
 // Read pointer points to the last written character, initially -1.
 readptr:  .data 0
+// A flag that indicates whether or not we have a newline of input.
+// Set on writing '\n' and reset on reading that '\n'.
+// Implies only one newline at a time.
+have_newline: .data 0
 
 // Control structure for reading in data with PERI.
 control_in:
@@ -192,6 +196,7 @@ kie_halt:
 //     else if (c == CLEARLINE)
 //         process_clear_line();
 //     else if (c == (NEWLINE || ASCII_PRINTABLE)) {
+//         if (c == NEWLINE) have_newline = 1;
 //         putchar(c);
 //         storechar(c); }
 // return; }
@@ -200,6 +205,7 @@ kie_halt:
 //       buf[writeptr] = c;
 //       writeptr = (writeptr + 1) % (CHR_BUF_LEN * 4); }
 keyboard_interrupt_handler:
+      load  r1, control_in
       peri  r11, r1
       jcond err, keyboard_input_error
       load  r1, 0
@@ -226,6 +232,8 @@ kih_clearline:
 kih_newline:
       comp r2, '\n'
       jcond neq, kih_printable
+      load r4, 1
+      store r4, [have_newline]
       jump kih_print_store
 kih_printable:
       comp r2, 32
@@ -250,40 +258,55 @@ kih_done:
 //============================= USER FUNCTIONS ================================
 //=============================================================================
 // Gets the next character in the software buffer without waiting, if there
-// is a full line available, otherwise -1. The heuristic we use to see if
-// the character pointer is at the front and the current character is not null.
-// That means the enter button was pressed, reseting the position of the
-// character pointer.
+// is a full line available, otherwise -1.
 //
 // Rather than allocating memory for local variables and returns (which is
 // complexity we don't need too badly), we use registers and hope for the best.
-// getchar_nw:                               // char getchar_nw() {
-//       load  r1, -1                        //     char c = -1;
-//       load  r2, [character_pointer]       //     if (CHARACTER_POINTER == 0) {
-//       compz r2
-//       jcond neq, gcnw_else
-//       load  r2, [character_read_pointer]  //         if (CHR_BUFF[CHR_READ_PTR] != 0) {
-//       ldch  r2, character_buffer
-//       compz r2
-//       jcond eql, gcnw_else
-//       load  r1, r2                        //             c = CHR_BUFF[CHR_READ_PTR];
-//       inc   [character_read_pointer]      //             CHR_READ_PTR++; } }
-// gcnw_else:
-//       store r1, r12                      //     return c; }
-//       ret
-//
-// // This is the blocking version of getchar(). It just pauses until something
-// // exciting happens.
-// getchar:                      // char getchar() {
-//       call  getchar_nw        //     while ((char c = getchar_nw()) < 0)
-//       jpos  r12, gc_loop_end
-//       pause                   //         sleep(50);
-//       jump  getchar
-// gc_loop_end:
-//       ret                     //     return c; }
-//
-// // Puts a taken character back into the front of the buffer.
-// // Assume we're not at the front of the buffer since we're putting back.
+// char getchar_nw() {
+//     char c = r1 = -1;
+//     if (have_newline && readptr != writeptr) {
+//           c = buf[readptr];
+//           if (c == '\n') have_newline = 0;
+//           else readptr = (readptr + 1) % (CHR_BUF_LEN * 4); }
+//     return c; }
+getchar_nw:
+      load  r12, -1
+      load  r1, [readptr]
+      load  r2, [writeptr]
+      load  r3, [have_newline]
+// if-statement
+      compz r3
+      jcond eql, gcnw_done
+      comp  r1, r2
+      jcond eql, gcnw_done
+// At this point, we're done with writeptr so we can reuse that register.
+      load  r12, r1
+      ldch  r12, character_buffer
+      comp  r12, '\n'
+      jcond neq, gcnw_increment
+      load  r2, 0
+      store r2, [have_newline]
+gcnw_increment:
+      inc   r1
+      mod   r1, 512
+      store r1, [readptr]
+gcnw_done:
+      ret
+// This is the blocking version of getchar(). It just pauses until something
+// exciting happens.
+// char getchar() {
+//     while ((char c = getchar_nw()) < 0)
+//         sleep(50);
+//     return c; }
+getchar:
+      call  getchar_nw
+      jpos  r12, gc_loop_end
+      pause
+      jump  getchar
+gc_loop_end:
+      ret
+// Puts a taken character back into the front of the buffer.
+// Assume we're not at the front of the buffer since we're putting back.
 // backchar:                                // void backchar(char c) {
 //       dec   [character_read_pointer]     //     CHR_READ_PTR--;
 //       load  r1, [character_read_pointer]
@@ -291,9 +314,9 @@ kih_done:
 //       stch  r1, character_buffer
 //       ret                                //     return; }
 //
-// // Uses getchar() and by extension getchar_nw(). Converts an ASCII
-// // integer to a signed 32-bit integer. Acts like atoi().
-// // Uses higher-numbered registers to avoid tripping. This is not ideal.
+// Uses getchar() and by extension getchar_nw(). Converts an ASCII
+// integer to a signed 32-bit integer. Acts like atoi().
+// Uses higher-numbered registers to avoid tripping. This is not ideal.
 // getint:                      // int getint() {
 //       load  r5, 1            //     int mul = 1;
 //       call  getchar
