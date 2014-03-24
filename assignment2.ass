@@ -334,7 +334,6 @@ backchar:
       jcond neq, bc_else
       ret
 bc_else:
-      break
       load  r0, [fp+2]
       stch  r1, character_buffer
       store r1, [readptr]
