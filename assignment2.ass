@@ -323,6 +323,10 @@ gc_loop_end:
 //       else { buf[backidx] = c; readptr = backidx; }
 // }
 backchar:
+      push  fp
+      load  fp, sp
+      dec   sp
+
       load  r1, [readptr]
       dec   r1
       mod   r1, 512
@@ -330,9 +334,13 @@ backchar:
       jcond neq, bc_else
       ret
 bc_else:
-      load  r0, r12
+      break
+      load  r0, [fp+2]
       stch  r1, character_buffer
       store r1, [readptr]
+
+      load  sp, fp
+      pop   fp
       ret
 
 // Uses getchar() and by extension getchar_nw(). Converts an ASCII
@@ -381,9 +389,10 @@ test_program:          // void test_program() {
       call  printint
       type  '\n'
       inc   sp
-      load  r12, '2'   //     backchar('2');
-      call  backchar   //     printf("%d\n", getint());
-      call  getint
+      push  '2'        //     backchar('2');
+      call  backchar
+      inc   sp
+      call  getint     //     printf("%d\n", getint());
       push  r12
       call  printint
       type  '\n'
