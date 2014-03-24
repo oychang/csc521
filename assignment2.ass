@@ -17,7 +17,7 @@ character_buffer: .space 128
 // no more characters input until some are read.
 writeptr: .data 0
 // Read pointer points to the last written character, initially -1.
-readptr:  .data -1
+readptr:  .data 0
 
 // Control structure for reading in data with PERI.
 control_in:
