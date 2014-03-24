@@ -292,6 +292,7 @@ gcnw_increment:
       store r1, [readptr]
 gcnw_done:
       ret
+
 // This is the blocking version of getchar(). It just pauses until something
 // exciting happens.
 // char getchar() {
@@ -305,69 +306,77 @@ getchar:
       jump  getchar
 gc_loop_end:
       ret
+
 // Puts a taken character back into the front of the buffer.
-// Assume we're not at the front of the buffer since we're putting back.
-// backchar:                                // void backchar(char c) {
-//       dec   [character_read_pointer]     //     CHR_READ_PTR--;
-//       load  r1, [character_read_pointer]
-//       load  r0, r12                      //     CHARACTER_BUFF[CHR_READ_PTR] = c;
-//       stch  r1, character_buffer
-//       ret                                //     return; }
-//
+// void backchar(char c) {
+//       int backidx = (readptr - 1) % (CHR_BUF_LEN * 4);
+//       if (backidx == writeptr) return;
+//       else { buf[backidx] = c; readptr = backidx; }
+// }
+backchar:
+      load  r1, [readptr]
+      dec   r1
+      mod   r1, 512
+      comp  r1, [writeptr]
+      jcond neq, bc_else
+      ret
+bc_else:
+      load  r0, r12
+      stch  r1, character_buffer
+      store r1, [readptr]
+      ret
+
 // Uses getchar() and by extension getchar_nw(). Converts an ASCII
 // integer to a signed 32-bit integer. Acts like atoi().
 // Uses higher-numbered registers to avoid tripping. This is not ideal.
-// getint:                      // int getint() {
-//       load  r5, 1            //     int mul = 1;
-//       call  getchar
-//       load  r6, r12          //     int sum = getchar();
-//       comp  r6, '-'          //     if (sum == '-') {
-//       jcond neq, gi_loop_pre
-//       load  r5, -1           //         mul = -1;
-//       load  r6, '0'          //         sum = '0'; }
-// gi_loop_pre:
-//       sub   r6, '0'          //     sum -= '0'
-//       load  r7, -1           //     int i = -1;
-// gi_loop:
-//       call  getchar_nw       //     while ((i = getchar_nw()-'0') > 0 && i <=9) {
-//       load  r7, r12
-//       sub   r7, '0'
-//       jneg  r7, gi_loop_end
-//       comp  r7, 9
-//       jcond gtr, gi_loop_end
-//       mul   r6, 10           //         sum *= 10;
-//       add   r6, r7           //         sum += i; }
-//       jump  gi_loop
-// gi_loop_end:
-//       mul   r6, r5           //     return sum * mul; }
-//       load  r12, r6
-//       ret
+getint:                      // int getint() {
+      load  r5, 1            //     int mul = 1;
+      call  getchar
+      load  r6, r12          //     int sum = getchar();
+      comp  r6, '-'          //     if (sum == '-') {
+      jcond neq, gi_loop_pre
+      load  r5, -1           //         mul = -1;
+      load  r6, '0'          //         sum = '0'; }
+gi_loop_pre:
+      sub   r6, '0'          //     sum -= '0'
+      load  r7, -1           //     int i = -1;
+gi_loop:
+      call  getchar_nw       //     while ((i = getchar_nw()-'0') > 0 && i <=9) {
+      load  r7, r12
+      sub   r7, '0'
+      jneg  r7, gi_loop_end
+      comp  r7, 9
+      jcond gtr, gi_loop_end
+      mul   r6, 10           //         sum *= 10;
+      add   r6, r7           //         sum += i; }
+      jump  gi_loop
+gi_loop_end:
+      mul   r6, r5           //     return sum * mul; }
+      load  r12, r6
+      ret
 //=============================================================================
 //================================== MAIN =====================================
 //=============================================================================
 main:
       call  setup_interrupts
-      // call  test_program
-      wait
+      call  test_program
       halt
 //=============================================================================
 //=============================== TEST PROGRAM ================================
 //=============================================================================
 // This is a simple program that demonstrates all of the user program funs.
 // getint() depends on getchar() depends on getchar_nw() depends on kbhand
-// test_program:          // void test_program() {
-//       call  getint     //     printf("%d\n", getint());
-//       push  r12
-//       call  printint
-//       type  '\n'
-//       inc   sp
-//
-//       load  r12, '2'   //     backchar('2');
-//       call  backchar   //     printf("%d\n", getint());
-//       call  getint
-//       push  r12
-//       call  printint
-//       type  '\n'
-//       inc   sp
-//
-//       ret              //       return; }
+test_program:          // void test_program() {
+      call  getint     //     printf("%d\n", getint());
+      push  r12
+      call  printint
+      type  '\n'
+      inc   sp
+      load  r12, '2'   //     backchar('2');
+      call  backchar   //     printf("%d\n", getint());
+      call  getint
+      push  r12
+      call  printint
+      type  '\n'
+      inc   sp
+      ret              //       return; }
