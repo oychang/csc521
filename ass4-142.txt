@@ -1,0 +1,21 @@
+Create a good implementation of newvec and freevec.
+
+newvec and freevec should work properly and efficiently.
+
+Ideally newvec (on its first call perhaps) should find
+its own heap space rather than requiring the programmer
+to provide one through init().
+
+freevec must actually reclaim the chunk it is given, and
+recombine it with any neighbouring free chunks so that
+it is available for reallocation.
+
+newvec should be able to find a free chunk of the appropriate
+size quickly, without requiring a search of a large number
+of free chunks.
+
+Check that it works in a reasonable way, with a program
+that uses memory allocations of a number of different sizes.
+
+
+
