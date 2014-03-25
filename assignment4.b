@@ -27,9 +27,6 @@ let inuse(size_field) be
 {   let tmp = size_field bitand 0x1;
     resultis tmp = 1 }
 
-let splitnode(baseaddr, sizea, sizeb) be
-{ out("%d %d\n", sizea, sizeb);
-    return }
 
 let createnode(addr, size, nextptr, prevptr) be
 {   addr ! 0 := nextptr;
@@ -38,6 +35,20 @@ let createnode(addr, size, nextptr, prevptr) be
     addr ! (size - 1) := size;
 
     resultis addr }
+
+
+// assume sizea <= sizeb
+let splitnode(baseaddr, sizea, sizeb) be
+{   let blocka, blockb, prev, next;
+    blocka := baseaddr;
+    blockb := baseaddr + sizea;
+    next := baseaddr ! 0;
+    prev := baseaddr ! (baseaddr + sizea + sizeb) - 2;
+
+    createnode(blocka, sizea, next, prev);
+    createnode(blockb, sizeb, nil, nil);
+
+    resultis blockb }
 
 
 let firstfit_newvec(n) be
@@ -71,7 +82,7 @@ let firstfit_newvec(n) be
 
         // Check if we need to reposition `headptr`
         if node = headptr then {
-            headptr = node ! 0; // TODO: debug
+            headptr := node ! 0; // TODO: debug
         }
 
         // Set the node to used (set to an odd number)
