@@ -39,41 +39,42 @@ let createnode(addr, size, nextptr, prevptr) be
 
     resultis addr }
 
-// Let the memory address that marks the beginning of heap memory
-// be 1024 words away from our OS stuff (this program).
-// Assume that this is far away and do not do the entire probe process.
-// Ensure this is at the end of the program so that its address
-// will be far away from stuff in use.
-let probe() be
-{ }
-
 
 let firstfit_newvec(n) be
 {   let node = headptr;
+    let nodesize;
     let realn = n + 4;
 
+    out("looking for a chunk of size %d (to allocate %d)\n", realn, n);
     // Use a first-fit strategy to get the first chunk with size >= n
     while node /= nil do {
+        nodesize := node ! 1;
+
         // Check in use
-        if inuse(node ! 1) then {
+        if inuse(nodesize) then {
+            out("node is in use\n");
             node := node ! 0;
             loop;
         }
 
         // Check size
-        if (node ! 1) < realn then {
+        if nodesize < realn then {
+            out("node is too small\n");
             node := node ! 0;
             loop; // <=> continue
         }
 
         // If good, check if worthwhile to split
-//        if (node ! 1) > (realn + 16) then {
-//
-//        }
+        // Every block is a multiple of 16.
+        // Thus, only split this block into two separate ones
+        // if, at a minimum, we can create another 16 block.
+        if nodesize >= (realn + 16) then {
+
+        }
 
         // Set the node to used (set to an odd number)
-        node ! 1 := (node ! 1) + 1;
-
+        out("setting node to used\n");
+        node ! 1 := nodesize + 1;
     }
 
     resultis nil }
@@ -84,6 +85,15 @@ let firstfit_freevec(addr) be
     return }
 
 
+// Let the memory address that marks the beginning of heap memory
+// be 1024 words away from our OS stuff (this program).
+// Assume that this is far away and do not do the entire probe process.
+// Ensure this is at the end of the program so that its address
+// will be far away from stuff in use.
+let probe() be
+{ }
+
+
 let start() be
 {   let a;
     // Override the static declarations of newvec and freevec
@@ -91,7 +101,7 @@ let start() be
     freevec := firstfit_freevec;
     hstart +:= probe;
     // Setup the initial bigass node
-    headptr := createnode(hstart, hsize, nil, nil);
+    createnode(hstart, hsize, nil, nil);
 
     // Test instructions
     a := newvec(10);
