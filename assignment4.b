@@ -27,9 +27,9 @@ let inuse(size_field) be
 {   let tmp = size_field bitand 0x1;
     resultis tmp = 1 }
 
-let splitnode() be
-{
-}
+let splitnode(baseaddr, sizea, sizeb) be
+{ out("%d %d\n", sizea, sizeb);
+    return }
 
 let createnode(addr, size, nextptr, prevptr) be
 {   addr ! 0 := nextptr;
@@ -44,24 +44,18 @@ let firstfit_newvec(n) be
 {   let node = headptr;
     let nodesize;
     let realn = n + 4;
+    let splitsize;
 
     out("looking for a chunk of size %d (to allocate %d)\n", realn, n);
     // Use a first-fit strategy to get the first chunk with size >= n
     while node /= nil do {
         nodesize := node ! 1;
 
-        // Check in use
-        if inuse(nodesize) then {
-            out("node is in use\n");
+        // Check in use and proper size
+        if (inuse(nodesize)) \/ (nodesize < realn) then {
+            out("bad node\n");
             node := node ! 0;
             loop;
-        }
-
-        // Check size
-        if nodesize < realn then {
-            out("node is too small\n");
-            node := node ! 0;
-            loop; // <=> continue
         }
 
         // If good, check if worthwhile to split
@@ -69,12 +63,23 @@ let firstfit_newvec(n) be
         // Thus, only split this block into two separate ones
         // if, at a minimum, we can create another 16 block.
         if nodesize >= (realn + 16) then {
+            // for x positive, floor(n / 16) <=> (n-1)/16 + 1
+            splitsize := ((realn - 1)/16) + 1;
+            node := splitnode(node, splitsize*16, nodesize - (splitsize*16));
+            nodesize := splitsize * 16;
+        }
 
+        // Check if we need to reposition `headptr`
+        if node = headptr then {
+            headptr = node ! 0; // TODO: debug
         }
 
         // Set the node to used (set to an odd number)
         out("setting node to used\n");
         node ! 1 := nodesize + 1;
+
+        // Return pointer to the
+        resultis (node + 2);
     }
 
     resultis nil }
@@ -94,14 +99,20 @@ let probe() be
 { }
 
 
-let start() be
-{   let a;
-    // Override the static declarations of newvec and freevec
+let init_heap() be
+{   // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
     hstart +:= probe;
+    headptr := hstart;
     // Setup the initial bigass node
     createnode(hstart, hsize, nil, nil);
+    return }
+
+
+let start() be
+{   let a;
+    init_heap();
 
     // Test instructions
     a := newvec(10);
