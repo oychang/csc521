@@ -1,6 +1,5 @@
 import "io"
 
-
 // Much lecture notes. Such helpful. Wow.
 // http://www.cs.princeton.edu/courses/archive/spr11/cos217/lectures/20DynamicMemory2.pdf
 // ~~~~~~~~~~~~~~~~~~~~~~~ Anatomy of a Chunk of Memory ~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,8 +18,35 @@ import "io"
 // All chunks will have an even size => last bit of size used for in-use flag
 // NB: ternary if := A -> B, C
 
-mainfest { hsize = 128 }
-static { hstart = 1000, headptr }
+manifest { hsize = 128 }
+static { hstart = 1024, headptr }
+
+// Get the least significant bit of a 32-bit word and compare to 1.
+// If 1, then this node is in use. Otherwise, we're freee
+let inuse(size_field) be
+{   let tmp = size_field bitand 0x1;
+    resultis tmp = 1 }
+
+let splitnode() be
+{
+}
+
+let createnode(addr, size, nextptr, prevptr) be
+{   addr ! 0 := nextptr;
+    addr ! 1 := size;
+    addr ! (size - 2) := prevptr;
+    addr ! (size - 1) := size;
+
+    resultis addr }
+
+// Let the memory address that marks the beginning of heap memory
+// be 1024 words away from our OS stuff (this program).
+// Assume that this is far away and do not do the entire probe process.
+// Ensure this is at the end of the program so that its address
+// will be far away from stuff in use.
+let probe() be
+{ }
+
 
 let firstfit_newvec(n) be
 {   let node = headptr;
@@ -31,7 +57,7 @@ let firstfit_newvec(n) be
         // Check in use
         if inuse(node ! 1) then {
             node := node ! 0;
-            continue;
+            loop;
         }
 
         // Check size
@@ -46,33 +72,17 @@ let firstfit_newvec(n) be
 //        }
 
         // Set the node to used (set to an odd number)
-        node ! 1 = (node ! 1) + 1;
+        node ! 1 := (node ! 1) + 1;
 
     }
 
     resultis nil }
 
-// Get the least significant bit of a 32-bit word and compare to 1.
-// If 1, then this node is in use. Otherwise, we're freee
-let inuse(size_field) be
-{   let tmp = size_field & 0x1;
-    resultis tmp = 1 }
-
-let splitnode() be
-{
-}
 
 let firstfit_freevec(addr) be
 {
     return }
 
-let createnode(addr, size, nextptr, prevptr) be
-{   addr ! 0 := nextptr;
-    addr ! 1 := size;
-    addr ! (size - 2) := prevptr;
-    addr ! (size - 1) := size;
-
-    resultis addr }
 
 let start() be
 {   let a;
@@ -88,10 +98,3 @@ let start() be
     freevec(a);
 
     return }
-// Let the memory address that marks the beginning of heap memory
-// be 1024 words away from our OS stuff (this program).
-// Assume that this is far away and do not do the entire probe process.
-// Ensure this is at the end of the program so that its address
-// will be far away from stuff in use.
-let probe() be
-{ }
