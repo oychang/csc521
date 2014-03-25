@@ -80,9 +80,12 @@ let firstfit_newvec(n) be
             nodesize := splitsize * 16;
         }
 
-        // Check if we need to reposition `headptr`
+        // Check if we need to reposition `headptr`, which happens in the case
+        // when we are returning the memory chunk referred to by the current
+        // head pointer. Pass the buck to the next one after that (which
+        // might be nil).
         if node = headptr then {
-            headptr := node ! 0; // TODO: debug
+            headptr := headptr ! 0;
         }
 
         // Set the node to used (set to an odd number)
@@ -95,7 +98,9 @@ let firstfit_newvec(n) be
 
     resultis nil }
 
-
+// Place the newly freed node at the front of the linked list of nodes, i.e.
+// reassign `headptr`.
+// Coalesce with neighboring chunks if those are free.
 let firstfit_freevec(addr) be
 {
     return }
