@@ -24,7 +24,7 @@ static { hstart = 1024, headptr }
 // Get the least significant bit of a 32-bit word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
 let inuse(size_field) be
-{   let tmp = size_field bitand 0x1;
+{   let tmp = size_field bitand 1;
     resultis tmp = 1 }
 
 
@@ -98,11 +98,36 @@ let firstfit_newvec(n) be
 
     resultis nil }
 
+
+// Collapse down leftchunk and rightchunk into one chunk and return the
+// address that points to the header section of the left, newly combined chunk.
+let coalesce(leftchunk, rightchunk) be
+{   let chunk = nil;
+
+    resultis chunk }
+
+
+
+
 // Place the newly freed node at the front of the linked list of nodes, i.e.
 // reassign `headptr`.
 // Coalesce with neighboring chunks if those are free.
 let firstfit_freevec(addr) be
-{
+{   let leftchunk, rightchunk;
+    // Check that addr contains stuff that can be freed.
+    if inuse(addr ! 1) /= 1 then return;
+
+    // Check/coalesce left neighbor
+    leftchunk := addr - (addr ! -1);
+    if inuse(leftchunk ! 1) = 0 then addr := coalesce(leftchunk, addr);
+
+    // Check/coalesce right neighbor
+    rightchunk := addr + (addr ! 1) + 1;
+    if inuse(rightchunk ! 1) = 0 then addr := coalesce(addr, rightchunk);
+
+    // Add to headptr
+    headptr := createnode(addr, addr ! 1, headptr, nil);
+
     return }
 
 
