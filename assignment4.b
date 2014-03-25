@@ -102,11 +102,24 @@ let firstfit_newvec(n) be
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
 let coalesce(leftchunk, rightchunk) be
-{   let chunk = nil;
+{   let totalsize = (leftchunk ! 1) + (rightchunk ! 1);
+    // We have four node pointers to change:
+    // a) leftchunk's next becomes newchunk's next
+    let newnext = leftchunk ! 1;
+    // b) rightchunk's previous becomes newchunk's previous
+    let newprev = rightchunk ! ((rightchunk ! 1) - 1);
 
-    resultis chunk }
+    // c) leftchunk's previous's next becomes rightchunk's next's previous
+    // d) rightchunk's next's previous becomes leftchunk's previous's next
+    //let leftchunk_prev = leftchunk ! ((leftchunk ! 1) - 1);
+    // TODO: nil check
+    //let leftchunk_prev_next = leftchunk_prev ! 0;
+    //let rightchunk_next = rightchunk ! 0;
+    //let rightchunk_next_prev = rightchunk_next ! ()
 
-
+    let newchunk = nil;
+    newchunk := createnode(leftchunk, totalsize, newnext, newprev);
+    resultis newchunk }
 
 
 // Place the newly freed node at the front of the linked list of nodes, i.e.
