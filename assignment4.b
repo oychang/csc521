@@ -18,13 +18,14 @@ import "io"
 // All chunks will have an even size => last bit of size used for in-use flag
 // NB: ternary if := A -> B, C
 
-manifest { hsize = 128 }
+manifest { hsize = 64 }
 static { hstart = 1024, headptr }
 
 // Get the least significant bit of a 32-bit word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
 let inuse(size_field) be
 {   let tmp = size_field bitand 1;
+    if tmp = 1 then out("chunk in use\n");
     resultis tmp = 1 }
 
 
@@ -37,14 +38,18 @@ let createnode(addr, size, nextptr, prevptr) be
     resultis addr }
 
 
-// assume sizea <= sizeb
+// Assume sizea <= sizeb
+// Assume b is about to be used, so we don't have to have pointers
 let splitnode(baseaddr, sizea, sizeb) be
 {   let blocka, blockb, prev, next;
     blocka := baseaddr;
     blockb := baseaddr + sizea;
     next := baseaddr ! 0;
-    prev := baseaddr ! (baseaddr + sizea + sizeb) - 2;
+    prev := baseaddr ! (sizea + sizeb - 2);
 
+    out("splitting chunk into two chunks starting at %d and %d, size %d/%d\n",
+        blocka, blockb, sizea, sizeb);
+    out("next is %d, prev is %d\n", next, prev);
     createnode(blocka, sizea, next, prev);
     createnode(blockb, sizeb, nil, nil);
 
@@ -61,10 +66,11 @@ let firstfit_newvec(n) be
     // Use a first-fit strategy to get the first chunk with size >= n
     while node /= nil do {
         nodesize := node ! 1;
+        out("current node has size %d\n", nodesize);
 
         // Check in use and proper size
         if (inuse(nodesize)) \/ (nodesize < realn) then {
-            out("bad node\n");
+            out("node is in use or undersized\n");
             node := node ! 0;
             loop;
         }
@@ -111,11 +117,15 @@ let coalesce(leftchunk, rightchunk) be
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     // d) rightchunk's next's previous becomes leftchunk's previous's next
-    //let leftchunk_prev = leftchunk ! ((leftchunk ! 1) - 1);
-    // TODO: nil check
-    //let leftchunk_prev_next = leftchunk_prev ! 0;
-    //let rightchunk_next = rightchunk ! 0;
-    //let rightchunk_next_prev = rightchunk_next ! ()
+//    let leftchunk_prev_next = nil, rightchunk_next_prev = nil;
+//    let leftchunk_prev = leftchunk ! ((leftchunk ! 1) - 1);
+//    let rightchunk_next = rightchunk ! 0;
+//    // Do this in case either of the above fields are set to nil.
+//    if leftchunk_prev /= nil then {
+//        leftchunk_prev_next =
+//    }
+    //leftchunk_prev_next = leftchunk_prev ! 0;
+    //rightchunk_next_prev = rightchunk_next ! ()
 
     let newchunk = nil;
     newchunk := createnode(leftchunk, totalsize, newnext, newprev);
@@ -165,11 +175,23 @@ let init_heap() be
 
 
 let start() be
-{   let a;
+{   let a, b;
     init_heap();
 
     // Test instructions
     a := newvec(10);
-    freevec(a);
+    test a = nil then {
+        out("a is nil\n");
+    } else {
+        freevec(a);
+    }
+    out("\n");
+
+    b := newvec(60);
+    test b = nil then {
+        out("b is nil\n");
+    } else {
+        freevec(b);
+    }
 
     return }
