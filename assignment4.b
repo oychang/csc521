@@ -47,9 +47,6 @@ let splitnode(baseaddr, sizea, sizeb) be
     next := baseaddr ! 0;
     prev := baseaddr ! (sizea + sizeb - 2);
 
-    out("splitting chunk into two chunks starting at %d and %d, size %d/%d\n",
-        blocka, blockb, sizea, sizeb);
-    out("next is %d, prev is %d\n", next, prev);
     createnode(blocka, sizea, next, prev);
     createnode(blockb, sizeb, nil, nil);
 
@@ -62,15 +59,12 @@ let firstfit_newvec(n) be
     let realn = n + 4;
     let splitsize;
 
-    out("looking for a chunk of size %d (to allocate %d)\n", realn, n);
     // Use a first-fit strategy to get the first chunk with size >= n
     while node /= nil do {
         nodesize := node ! 1;
-        out("current node has size %d\n", nodesize);
 
         // Check in use and proper size
         if (inuse(nodesize)) \/ (nodesize < realn) then {
-            out("node is in use or undersized\n");
             node := node ! 0;
             loop;
         }
@@ -95,7 +89,7 @@ let firstfit_newvec(n) be
         }
 
         // Set the node to used (set to an odd number)
-        out("setting node to used\n");
+        node ! ((node ! 1) - 1) := nodesize + 1;
         node ! 1 := nodesize + 1;
 
         // Return pointer to user's data area.
@@ -136,9 +130,7 @@ let coalesce(leftchunk, rightchunk) be
     //leftchunk_prev_next = leftchunk_prev ! 0;
     //rightchunk_next_prev = rightchunk_next ! ()
 
-    //let newchunk = nil;
-    //newchunk := createnode(leftchunk, totalsize, newnext, newprev);
-    //resultis newchunk }
+    //resultis createnode(leftchunk, totalsize, newnext, newprev) }
 
 
 // Place the newly freed node at the front of the linked list of nodes, i.e.
@@ -147,23 +139,21 @@ let coalesce(leftchunk, rightchunk) be
 let firstfit_freevec(addr) be
 {   let leftchunk, rightchunk;
     addr -:= 2; // Include the header
-    // Check that addr contains stuff that can be freed.
-    out("about to free addr %d\n", addr);
 
     // Check/coalesce left neighbor
     leftchunk := addr - (addr ! -1);
-    out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
+    //out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
     if (leftchunk /= 0) /\ (inuse(leftchunk ! 1) = 0) /\ (leftchunk >= hstart) then {
         out("about to coalesce with left chunk\n");
-        addr := coalesce(leftchunk, addr);
+        //addr := coalesce(leftchunk, addr);
     }
 
     // Check/coalesce right neighbor
     rightchunk := addr + (addr ! 1);
-    out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
+    //out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
     if (rightchunk /= 0) /\ (inuse(rightchunk ! 1) = 0) /\ (rightchunk < (hstart + hsize)) then {
         out("about to coalesce with right chunk\n");
-        addr := coalesce(addr, rightchunk);
+        //addr := coalesce(addr, rightchunk);
     }
 
     // Add to headptr
@@ -201,16 +191,15 @@ let start() be
     test a = nil then {
         out("a is nil\n");
     } else {
-        out("got address of a as %d, size %d\n", a, (a ! -1)-1);
         freevec(a);
     }
     out("\n");
 
-    b := newvec(60);
-    test b = nil then {
-        out("b is nil\n");
-    } else {
-        freevec(b);
-    }
+//    b := newvec(60);
+//    test b = nil then {
+//        out("b is nil\n");
+//    } else {
+//        freevec(b);
+//    }
 
     return }
