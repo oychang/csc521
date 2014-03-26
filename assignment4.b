@@ -108,13 +108,21 @@ let firstfit_newvec(n) be
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
 let coalesce(leftchunk, rightchunk) be
-{   let totalsize = ((leftchunk ! 1) bitand 0xfffffffe) +
-        ((rightchunk ! 1) bitand 0xfffffffe);
+{   let leftsize = (leftchunk ! 1) bitand 0xfffffffe;
+    let rightsize = (rightchunk ! 1) bitand 0xfffffffe;
+    let totalsize = leftsize + rightsize;
+
     // We have four node pointers to change:
     // a) leftchunk's next becomes newchunk's next
-    let newnext = leftchunk ! 1;
+    let newnext = leftchunk ! 0;
     // b) rightchunk's previous becomes newchunk's previous
-    let newprev = rightchunk ! ((rightchunk ! 1) - 1);
+    let newprev = rightchunk ! (rightsize - 2);
+
+    out("leftchunk @ %d, rightchunk @ %d\n", leftchunk, rightchunk);
+    out("leftchunk is %d, rightchunk is %d\n", leftsize, rightsize);
+    out("got totalsize as %d\n", totalsize);
+    out("newnext = %d, newprev = %d\n", newnext, newprev);
+    return }
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     // d) rightchunk's next's previous becomes leftchunk's previous's next
@@ -128,10 +136,9 @@ let coalesce(leftchunk, rightchunk) be
     //leftchunk_prev_next = leftchunk_prev ! 0;
     //rightchunk_next_prev = rightchunk_next ! ()
 
-    let newchunk = nil;
-    out("got totalsize as %d\n", totalsize);
-    newchunk := createnode(leftchunk, totalsize, newnext, newprev);
-    resultis newchunk }
+    //let newchunk = nil;
+    //newchunk := createnode(leftchunk, totalsize, newnext, newprev);
+    //resultis newchunk }
 
 
 // Place the newly freed node at the front of the linked list of nodes, i.e.
@@ -139,29 +146,28 @@ let coalesce(leftchunk, rightchunk) be
 // Coalesce with neighboring chunks if those are free.
 let firstfit_freevec(addr) be
 {   let leftchunk, rightchunk;
-    // this function is called by user address which ignores the header
-    addr -:= 2;
+    addr -:= 2; // Include the header
     // Check that addr contains stuff that can be freed.
     out("about to free addr %d\n", addr);
 
     // Check/coalesce left neighbor
     leftchunk := addr - (addr ! -1);
     out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
-    if (inuse(leftchunk ! 1) = 0) /\ (leftchunk >= hstart) then {
+    if (leftchunk /= 0) /\ (inuse(leftchunk ! 1) = 0) /\ (leftchunk >= hstart) then {
         out("about to coalesce with left chunk\n");
         addr := coalesce(leftchunk, addr);
     }
 
     // Check/coalesce right neighbor
-    //rightchunk := addr + (addr ! 1) + 1;
-    //out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
-    //if (inuse(rightchunk ! 1) = 0) /\ (rightchunk < (hstart + hsize)) then {
-        //out("about to coalesce with right chunk\n");
-        //addr := coalesce(addr, rightchunk);
-    //}
+    rightchunk := addr + (addr ! 1);
+    out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
+    if (rightchunk /= 0) /\ (inuse(rightchunk ! 1) = 0) /\ (rightchunk < (hstart + hsize)) then {
+        out("about to coalesce with right chunk\n");
+        addr := coalesce(addr, rightchunk);
+    }
 
     // Add to headptr
-    //headptr := createnode(addr, addr ! 1, headptr, nil);
+    headptr := createnode(addr, addr ! 1, headptr, nil);
 
     return }
 
