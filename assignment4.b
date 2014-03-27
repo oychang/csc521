@@ -121,13 +121,14 @@ let coalesce(lchunk, rchunk) be {
     //resultis create(leftchunk, totalsize, newnext, newprev) }
 
 
-let firstfit_newvec(siwze) be {
+let firstfit_newvec(size) be {
     let chunk = headptr; // Where to start search for available chunks.
 
     let chunks; // Current search chunk size
     let reals = size + 4; // 2 word header, footer
     let lchunks, rchunks; // For use in splitting
 
+    out("size: %d, chunk: %d, reals: %d\n", size, chunk, reals); // xxx: log
     while chunk /= nil do {
         // Use a first-fit strategy to get the first chunk with size >= n
         chunks := size(chunk);
@@ -159,7 +160,6 @@ let firstfit_newvec(siwze) be {
 
         // Set the node to used (set to an odd number)
         size(chunk, chunks + 1);
-
         // Return pointer to user's data area.
         resultis (chunk + 2);
     }
@@ -190,7 +190,7 @@ let firstfit_freevec(addr) be {
     // Check/coalesce right neighbor
     rchunk := addr + size(addr);
     out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
-    if (rightchunk /= 0)
+    if (rchunk /= 0)
         /\ (inuse(size(rchunk)) = 0)
         /\ (rchunk < (hstart + hsize)) then {
         out("about to coalesce with right chunk\n");
@@ -211,13 +211,14 @@ let firstfit_freevec(addr) be {
 let probe() be
 { }
 let init_heap() be {
+    out("initializing heap\n"); // xxx: log
     // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
-    hstart +:= probe;
-    headptr := hstart;
     // Setup the initial bigass node
-    create(hstart, hsize, nil, nil);
+    out("initial allocation\n"); // xxx: log
+    hstart +:= probe;
+    headptr := create(hstart, hsize, nil, nil);
     return }
 
 
@@ -225,6 +226,7 @@ let start() be {
     let a, b;
     init_heap();
 
+    out("\nfirst alloc test\n");
     // Test instructions
     a := newvec(10);
     test a = nil then {
