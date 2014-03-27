@@ -47,7 +47,7 @@ let next(addr, nextaddr) be {
             nextaddr ! (size(nextaddr) - 2) := addr; // set next's previous
         return;
     }
-    out("got next of %d as %d\n", addr, nextaddr); // xxx: log
+    out("got next of %d as %d\n", addr, addr ! 0); // xxx: log
     resultis (addr ! 0) }
 let prev(addr, prevaddr) be {
     let n = size(addr);
@@ -185,9 +185,6 @@ let firstfit_freevec(addr) be {
     // not in the freelist but by address.
     // If those are free, then combine either or both with the newly freed
     // chunk to combat fragmentation.
-
-    // Left chunk
-    // Check if chunk is in the heap
     if ((addr - 1) >= hstart) /\ (inuse(addr ! -1) = 0) then {
         lchunk := addr - (addr ! -1);
         out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
@@ -195,7 +192,6 @@ let firstfit_freevec(addr) be {
         addr := coalesce(lchunk, addr);
     }
 
-    // Right chunk
     rchunk := addr + size(addr);
     if (rchunk < (hstart + hsize)) /\ (inuse(size(rchunk)) = 0)  then {
         out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
@@ -232,7 +228,6 @@ let start() be {
     init_heap();
 
     out("\nfirst alloc test\n");
-    // Test instructions
     a := newvec(10);
     test a = nil then {
         out("a is nil\n");
