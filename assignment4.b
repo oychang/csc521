@@ -33,24 +33,24 @@ let size(addr, size) be {
         return;
     }
     resultis (addr ! 1) }
-let next(chunk, nextaddr) be {
+let next(addr, nextaddr) be {
     if numbargs() = 2 then {
-        chunk ! 0 := nextaddr;
+        addr ! 0 := nextaddr;
         return;
     }
-    resultis (chunk ! 0) }
+    resultis (addr ! 0) }
 // Assume size field has been set by this point
-let prev(chunk, prevaddr) be {
-    let size = size(chunk);
+let prev(addr, prevaddr) be {
+    let size = size(addr);
     if numbargs() = 2 then {
-        chunk ! (size - 2) := prevaddr;
+        addr ! (size - 2) := prevaddr;
         return;
     }
-    resultis (chunk ! (size - 2)) }
-let createnode(addr, size, nextptr, prevptr) be {
+    resultis (addr ! (size - 2)) }
+let create(addr, size, nextaddr, prevaddr) be {
     size(addr, size);
-    prev(addr, prevptr);
-    next(addr, nextptr);
+    prev(addr, prevaddr);
+    next(addr, nextaddr);
 
     resultis addr }
 
@@ -70,8 +70,8 @@ let splitnode(baseaddr, sizea, sizeb) be
     next := next(baseaddr);
     prev := prev(baseaddr);
 
-    createnode(blocka, sizea, next, prev);
-    createnode(blockb, sizeb, nil, nil);
+    create(blocka, sizea, next, prev);
+    create(blockb, sizeb, nil, nil);
 
     resultis blockb }
 // Collapse down leftchunk and rightchunk into one chunk and return the
@@ -105,7 +105,7 @@ let coalesce(leftchunk, rightchunk) be
     //leftchunk_prev_next = leftchunk_prev ! 0;
     //rightchunk_next_prev = rightchunk_next ! ()
 
-    //resultis createnode(leftchunk, totalsize, newnext, newprev) }
+    //resultis create(leftchunk, totalsize, newnext, newprev) }
 
 
 let firstfit_newvec(n) be
@@ -179,7 +179,7 @@ let firstfit_freevec(addr) be
     }
 
     // Add to headptr
-    headptr := createnode(addr, addr ! 1, headptr, nil);
+    headptr := create(addr, addr ! 1, headptr, nil);
 
     return }
 
@@ -198,7 +198,7 @@ let init_heap() be
     hstart +:= probe;
     headptr := hstart;
     // Setup the initial bigass node
-    createnode(hstart, hsize, nil, nil);
+    create(hstart, hsize, nil, nil);
     return }
 
 
