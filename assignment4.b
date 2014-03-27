@@ -78,7 +78,6 @@ let inuse(n) be {
 // Assume we're about to allocate the right chunk. This means that
 // lsize <= rsize and there will be no freelist pointers for rchunk.
 let split(addr, lsize, rsize) be {
-    out("splitting now\n"); // xxx: log
     out("splitting %d into two chunks, size %d and %d\n", addr, lsize, rsize);
     // Reassign all information for the left node.
     create(addr, lsize, next(addr), prev(addr));
@@ -91,6 +90,7 @@ let split(addr, lsize, rsize) be {
 let coalesce(lchunk, rchunk) be {
     let lsize, rsize, totalsize;
     let newnext, newprev;
+    // Get the new size of the chunk to create
     lsize := size(lchunk);
     rsize := size(rchunk);
     totalsize := lsize + rsize;
@@ -101,11 +101,8 @@ let coalesce(lchunk, rchunk) be {
     // b) rightchunk's previous becomes newchunk's previous
     newprev := prev(rchunk);
 
-    out("leftchunk @ %d, rightchunk @ %d\n", lchunk, rchunk);
-    out("leftchunk is %d, rightchunk is %d\n", lsize, rsize);
     out("got totalsize as %d\n", totalsize);
     out("newnext = %d, newprev = %d\n", newnext, newprev);
-    return }
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     // d) rightchunk's next's previous becomes leftchunk's previous's next
@@ -119,7 +116,7 @@ let coalesce(lchunk, rchunk) be {
     //leftchunk_prev_next = leftchunk_prev ! 0;
     //rightchunk_next_prev = rightchunk_next ! ()
 
-    //resultis create(leftchunk, totalsize, newnext, newprev) }
+    resultis create(lchunk, totalsize, newnext, newprev) }
 
 
 let firstfit_newvec(n) be {
@@ -231,7 +228,7 @@ let start() be {
     test a = nil then {
         out("a is nil\n");
     } else {
-        out("free\n"); // xxx: log
+        out("freeing a...\n"); // xxx: log
         freevec(a);
     }
     out("\n");
