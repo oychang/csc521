@@ -32,26 +32,33 @@ static { hstart = 1024, headptr }
 // off-by-one. The mask compensates for that.
 let size(addr, size) be {
     if numbargs() = 2 then {
+        out("setting size to %d\n", size); // xxx: log
         addr ! 1 := size;
         addr ! (size - 1) := size;
         return;
     }
+    out("got size of %d as %d\n", addr, ((addr ! 1) bitand 0xfffffffe)); // xxx: log
     resultis ((addr ! 1) bitand 0xfffffffe) }
 let next(addr, nextaddr) be {
     if numbargs() = 2 then {
+        out("setting %d next to %d\n", addr, nextaddr); // xxx: log
         addr ! 0 := nextaddr;
         return;
     }
+    out("got next of %d as %d\n", addr, nextaddr); // xxx: log
     resultis (addr ! 0) }
 // Assume size field has been set by this point
 let prev(addr, prevaddr) be {
     let size = size(addr);
     if numbargs() = 2 then {
+        out("setting %d next to %d\n", addr, prevaddr); // xxx: log
         addr ! (size - 2) := prevaddr;
         return;
     }
+    out("got prev of %d as %d\n", addr, (addr ! (size - 2))); // xxx: log
     resultis (addr ! (size - 2)) }
 let create(addr, size, nextaddr, prevaddr) be {
+    out("creating node at %d, size %d, next %d, prev %d\n", addr, size, nextaddr, prevaddr); // xxx: log
     size(addr, size);
     prev(addr, prevaddr);
     next(addr, nextaddr);
@@ -71,6 +78,7 @@ let inuse(size) be {
 // Assume we're about to allocate the right chunk. This means that
 // lsize <= rsize and there will be no freelist pointers for rchunk.
 let split(addr, lsize, rsize) be {
+    out("splitting now\n"); // xxx: log
     // Reassign all information for the left node.
     create(addr, lsize, next(addr), prev(addr));
     // Return the location of the right node for use in further allocation.
@@ -79,19 +87,21 @@ let split(addr, lsize, rsize) be {
 // TODO: completely borked
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
-let coalesce(leftchunk, rightchunk) be
-{   let leftsize = (leftchunk ! 1) bitand 0xfffffffe;
-    let rightsize = (rightchunk ! 1) bitand 0xfffffffe;
-    let totalsize = leftsize + rightsize;
+let coalesce(lchunk, rchunk) be {
+    let lsize, rsize, totalsize;
+    let newnext, newprev;
+    lsize := size(lchunk);
+    rsize := size(rchunk);
+    totalsize := lsize + rsize;
 
     // We have four node pointers to change:
     // a) leftchunk's next becomes newchunk's next
-    let newnext = leftchunk ! 0;
+    newnext := next(lchunk);
     // b) rightchunk's previous becomes newchunk's previous
-    let newprev = rightchunk ! (rightsize - 2);
+    newprev := prev(rchunk);
 
-    out("leftchunk @ %d, rightchunk @ %d\n", leftchunk, rightchunk);
-    out("leftchunk is %d, rightchunk is %d\n", leftsize, rightsize);
+    out("leftchunk @ %d, rightchunk @ %d\n", lchunk, rchunk);
+    out("leftchunk is %d, rightchunk is %d\n", lsize, rsize);
     out("got totalsize as %d\n", totalsize);
     out("newnext = %d, newprev = %d\n", newnext, newprev);
     return }
@@ -111,7 +121,7 @@ let coalesce(leftchunk, rightchunk) be
     //resultis create(leftchunk, totalsize, newnext, newprev) }
 
 
-let firstfit_newvec(size) be {
+let firstfit_newvec(siwze) be {
     let chunk = headptr; // Where to start search for available chunks.
 
     let chunks; // Current search chunk size
@@ -134,8 +144,8 @@ let firstfit_newvec(size) be {
         if chunks >= (reals + 16) then {
             // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
             lchunks := ((reals - 1) >> 4) + 1;
-            rchunks := nodes - lchunks;
-            node := split(node, lchunks, rchunks);
+            rchunks := chunks - lchunks;
+            chunk := split(chunk, lchunks, rchunks);
             chunks := rchunks;
         }
 
