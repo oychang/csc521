@@ -61,16 +61,18 @@ let inuse(size) be {
     let lsb = size bitand 1;
     if lsb = 1 then out("chunk in use\n"); // xxx: log
     resultis lsb = 1 }
+
 // Split a single chunk into two smaller ones, a left chunk and a right chunk.
 // We'll leave the left chunk as close to the original as possible so we
 // only have to change the previous pointer in the freelist.
 // Assume we're about to allocate the right chunk. This means that
 // lsize <= rsize and there will be no freelist pointers for rchunk.
-let splitnode(addr, lsize, rsize) be {
+let split(addr, lsize, rsize) be {
     // Reassign all information for the left node.
     create(addr, lsize, next(addr), prev(addr));
     // Return the location of the right node for use in further allocation.
     resultis create(addr + lsize, rsize, nil, nil) }
+
 // TODO: completely borked
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
@@ -106,50 +108,51 @@ let coalesce(leftchunk, rightchunk) be
     //resultis create(leftchunk, totalsize, newnext, newprev) }
 
 
-let firstfit_newvec(n) be
-{   let node = headptr;
-    let nodesize;
-    let rchunksize;
-    let realn = n + 4;
-    let splitsize;
+let firstfit_newvec(size) be {
+    let chunk = headptr; // Where to start search for available chunks.
 
-    // Use a first-fit strategy to get the first chunk with size >= n
-    while node /= nil do {
-        nodesize := size(node);
+    let chunks; // Current search chunk size
+    let reals = size + 4; // 2 word header, footer
+    let lchunks, rchunks; // For use in splitting
 
-        // Check in use and proper size
-        if (inuse(nodesize)) \/ (nodesize < realn) then {
-            node := next(node);
+    while chunk /= nil do {
+        // Use a first-fit strategy to get the first chunk with size >= n
+        chunks := size(chunk);
+        // Check if in use and proper size
+        if (inuse(chunks)) \/ (chunks < reals) then {
+            chunk := next(chunk);
             loop;
         }
 
-        // If good, check if worthwhile to split
-        // Every block is a multiple of 16.
-        // Thus, only split this block into two separate ones
-        // if, at a minimum, we can create another 16 block.
-        if nodesize >= (realn + 16) then {
-            rchunksize := splitsize << 4; // n * 16
-            // for x positive, floor(n / 16) <=> (n-1)/16 + 1
-            splitsize := ((realn - 1)/16) + 1;
-            node := splitnode(node, rchunksize, nodesize - rchunksize);
-            nodesize := rchunksize;
+        // Check if worthwhile to split
+        // Only split this block into two separate ones if, at a minimum,
+        // we can create another 16 block.
+        // Find out the sizes of the left and right chunks, both 16 divisible.
+        if chunks >= (reals + 16) then {
+            // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
+            lchunks := ((reals - 1) >> 4) + 1;
+            rchunks := nodes - lchunks;
+            node := split(node, lchunks, rchunks);
+            chunks := rchunks;
         }
 
         // Check if we need to reposition `headptr`, which happens in the case
         // when we are returning the memory chunk referred to by the current
         // head pointer. Pass the buck to the next one after that (which
         // might be nil).
-        if node = headptr then {
-            headptr := headptr ! 0;
+        if chunk = headptr then {
+            headptr := next(headptr);
         }
 
         // Set the node to used (set to an odd number)
-        size(node) := nodesize + 1;
+        size(chunk, chunks + 1);
 
         // Return pointer to user's data area.
-        resultis (node + 2);
+        resultis (chunk + 2);
     }
 
+    // If there are no available chunks for allocation.
+    // User should check the return value of this function for this case.
     resultis nil }
 
 
