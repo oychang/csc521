@@ -175,27 +175,33 @@ let firstfit_freevec(addr) be {
     // Include the header data
     addr -:= 2;
 
-    // Check/coalesce left neighbor
-    lchunk := addr - (addr ! -1); // use back size word
-    out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
-    if (lchunk /= 0)
-        /\ (inuse(size(lchunk)) = 0)
-        /\ (lchunk >= hstart) then {
+    // Free the chunk and add to the front of the freelist
+    headptr := create(addr, size(addr), headptr, nil);
+
+    // Now, check the chunks of memory to the right and to the left of the chunk,
+    // not in the freelist but by address.
+    // If those are free, then combine either or both with the newly freed
+    // chunk to combat fragmentation.
+
+    // Left chunk
+    // Check if chunk is in the heap
+    if ((addr - 1) >= hstart) /\ (inuse(addr ! -1) = 0) then {
+        lchunk := addr - (addr ! -1);
+        out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
         out("about to coalesce with left chunk\n");
         addr := coalesce(lchunk, addr);
     }
 
-    // Check/coalesce right neighbor
-    rchunk := addr + size(addr);
-    out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
-    if (rchunk /= 0)
-        /\ (inuse(size(rchunk)) = 0)
-        /\ (rchunk < (hstart + hsize)) then {
+    // Right chunk
+    if (rchunk < (hstart + hsize)) /\ (inuse(size(rchunk)) = 0)  then {
+        rchunk := addr + size(addr);
+        out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
         out("about to coalesce with right chunk\n");
         addr := coalesce(addr, rchunk);
     }
 
-    // Add to headptr
+    // Add again to headptr if we've coalesced since the last
+    // reassignment of headptr
     headptr := create(addr, size(addr), headptr, nil);
 
     return }
