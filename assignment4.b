@@ -30,11 +30,11 @@ static { hstart = 1024, headptr }
 // Assume that we will only have even sizes...the least significant bit
 // is used for status. Thus, most sizes will be literally represented as
 // off-by-one. The mask compensates for that.
-let size(addr, size) be {
+let size(addr, n) be {
     if numbargs() = 2 then {
-        out("setting size to %d\n", size); // xxx: log
-        addr ! 1 := size;
-        addr ! (size - 1) := size;
+        out("setting size to %d\n", n); // xxx: log
+        addr ! 1 := n;
+        addr ! (n - 1) := n;
         return;
     }
     out("got size of %d as %d\n", addr, ((addr ! 1) bitand 0xfffffffe)); // xxx: log
@@ -49,17 +49,17 @@ let next(addr, nextaddr) be {
     resultis (addr ! 0) }
 // Assume size field has been set by this point
 let prev(addr, prevaddr) be {
-    let size = size(addr);
+    let n = size(addr);
     if numbargs() = 2 then {
         out("setting %d next to %d\n", addr, prevaddr); // xxx: log
-        addr ! (size - 2) := prevaddr;
+        addr ! (n - 2) := prevaddr;
         return;
     }
-    out("got prev of %d as %d\n", addr, (addr ! (size - 2))); // xxx: log
-    resultis (addr ! (size - 2)) }
-let create(addr, size, nextaddr, prevaddr) be {
-    out("creating node at %d, size %d, next %d, prev %d\n", addr, size, nextaddr, prevaddr); // xxx: log
-    size(addr, size);
+    out("got prev of %d as %d\n", addr, (addr ! (n - 2))); // xxx: log
+    resultis (addr ! (n - 2)) }
+let create(addr, chunksize, nextaddr, prevaddr) be {
+    out("creating node at %d, size %d, next %d, prev %d\n", addr, chunksize, nextaddr, prevaddr); // xxx: log
+    size(addr, chunksize);
     prev(addr, prevaddr);
     next(addr, nextaddr);
     resultis addr }
@@ -67,8 +67,8 @@ let create(addr, size, nextaddr, prevaddr) be {
 // ==== Utility Functions
 // Get the least significant bit of a 32-bit word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
-let inuse(size) be {
-    let lsb = size bitand 1;
+let inuse(n) be {
+    let lsb = n bitand 1;
     if lsb = 1 then out("chunk in use\n"); // xxx: log
     resultis lsb = 1 }
 
@@ -121,14 +121,14 @@ let coalesce(lchunk, rchunk) be {
     //resultis create(leftchunk, totalsize, newnext, newprev) }
 
 
-let firstfit_newvec(size) be {
+let firstfit_newvec(n) be {
     let chunk = headptr; // Where to start search for available chunks.
 
     let chunks; // Current search chunk size
-    let reals = size + 4; // 2 word header, footer
+    let reals = n + 4; // 2 word header, footer
     let lchunks, rchunks; // For use in splitting
 
-    out("size: %d, chunk: %d, reals: %d\n", size, chunk, reals); // xxx: log
+    out("size: %d, chunk: %d, reals: %d\n", n, chunk, reals); // xxx: log
     while chunk /= nil do {
         // Use a first-fit strategy to get the first chunk with size >= n
         chunks := size(chunk);
