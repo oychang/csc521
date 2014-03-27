@@ -26,13 +26,17 @@ static { hstart = 1024, headptr }
 // size(node, 3);
 // -- Getting (assume node is address of header and is valid)
 // out("%d\n", size(node))
+
+// Assume that we will only have even sizes...the least significant bit
+// is used for status. Thus, most sizes will be literally represented as
+// off-by-one. The mask compensates for that.
 let size(addr, size) be {
     if numbargs() = 2 then {
         addr ! 1 := size;
         addr ! (size - 1) := size;
         return;
     }
-    resultis (addr ! 1) }
+    resultis ((addr ! 1) bitand 0xfffffffe) }
 let next(addr, nextaddr) be {
     if numbargs() = 2 then {
         addr ! 0 := nextaddr;
