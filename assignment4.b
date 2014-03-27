@@ -160,27 +160,32 @@ let firstfit_newvec(size) be {
 // reassign `headptr`.
 // Coalesce with neighboring chunks if those are free.
 let firstfit_freevec(addr) be {
-//    let leftchunk, rightchunk;
-//    addr -:= 2; // Include the header
-//
-//    // Check/coalesce left neighbor
-//    leftchunk := addr - (addr ! -1);
-//    out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
-//    if (leftchunk /= 0) /\ (inuse(leftchunk ! 1) = 0) /\ (leftchunk >= hstart) then {
-//        out("about to coalesce with left chunk\n");
-//        addr := coalesce(leftchunk, addr);
-//    }
-//
-//    // Check/coalesce right neighbor
-//    rightchunk := addr + (addr ! 1);
-//    out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
-    //if (rightchunk /= 0) /\ (inuse(rightchunk ! 1) = 0) /\ (rightchunk < (hstart + hsize)) then {
-//        out("about to coalesce with right chunk\n");
-//        addr := coalesce(addr, rightchunk);
-//    }
-//
-//    // Add to headptr
-//    headptr := create(addr, addr ! 1, headptr, nil);
+    let lchunk, rchunk;
+    // Include the header data
+    addr -:= 2;
+
+    // Check/coalesce left neighbor
+    lchunk := addr - (addr ! -1); // use back size word
+    out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
+    if (lchunk /= 0)
+        /\ (inuse(size(lchunk)) = 0)
+        /\ (lchunk >= hstart) then {
+        out("about to coalesce with left chunk\n");
+        addr := coalesce(lchunk, addr);
+    }
+
+    // Check/coalesce right neighbor
+    rchunk := addr + size(addr);
+    out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
+    if (rightchunk /= 0)
+        /\ (inuse(size(rchunk)) = 0)
+        /\ (rchunk < (hstart + hsize)) then {
+        out("about to coalesce with right chunk\n");
+        addr := coalesce(addr, rchunk);
+    }
+
+    // Add to headptr
+    headptr := create(addr, size(addr), headptr, nil);
 
     return }
 
