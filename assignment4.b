@@ -81,7 +81,6 @@ let inuse(n) be {
 // Assume we're about to allocate the right chunk. This means that
 // lsize <= rsize and there will be no freelist pointers for rchunk.
 let split(addr, lsize, rsize) be {
-    out("splitting %d into two chunks, size %d and %d\n", addr, lsize, rsize);
     // Reassign all information for the left node.
     create(addr, lsize, next(addr), prev(addr));
     // Return the location of the right node for use in further allocation.
@@ -129,7 +128,6 @@ let firstfit_newvec(n) be {
     let reals = n + 4; // 2 word header, footer
     let lchunks, rchunks; // For use in splitting
 
-    out("size: %d, chunk: %d, reals: %d\n", n, chunk, reals); // xxx: log
     while chunk /= nil do {
         // Use a first-fit strategy to get the first chunk with size >= n
         chunks := size(chunk);
@@ -227,12 +225,11 @@ let start() be {
     let a, b;
     init_heap();
 
-    out("\nfirst alloc test\n");
     a := newvec(10);
     test a = nil then {
         out("a is nil\n");
     } else {
-        out("freeing a...\n"); // xxx: log
+        out("freeing a...\n");
         freevec(a);
     }
     out("\n");
