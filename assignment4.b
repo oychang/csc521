@@ -55,7 +55,6 @@ let create(addr, size, nextaddr, prevaddr) be {
     size(addr, size);
     prev(addr, prevaddr);
     next(addr, nextaddr);
-
     resultis addr }
 
 // ==== Utility Functions
@@ -201,8 +200,8 @@ let firstfit_freevec(addr) be {
 // will be far away from stuff in use.
 let probe() be
 { }
-let init_heap() be
-{   // Override the static declarations of newvec and freevec
+let init_heap() be {
+    // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
     hstart +:= probe;
@@ -212,8 +211,8 @@ let init_heap() be
     return }
 
 
-let start() be
-{   let a, b;
+let start() be {
+    let a, b;
     init_heap();
 
     // Test instructions
