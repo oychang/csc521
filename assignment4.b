@@ -16,89 +16,64 @@ import "io"
 // Let the footer be two words: a poitner the the previous free & real size
 // Usable size of the chunk = real size - 4
 // All chunks will have an even size => last bit of size used for in-use flag
-// NB: ternary if := A -> B, C
 
 manifest { hsize = 64 }
 static { hstart = 1024, headptr }
 
-// Get the least significant bit of a 32-bit word and compare to 1.
-// If 1, then this node is in use. Otherwise, we're freee
-let inuse(size_field) be
-{   let tmp = size_field bitand 1;
-    if tmp = 1 then out("chunk in use\n");
-    resultis tmp = 1 }
-
-
-let createnode(addr, size, nextptr, prevptr) be
-{   addr ! 0 := nextptr;
-    addr ! 1 := size;
-    addr ! (size - 2) := prevptr;
-    addr ! (size - 1) := size;
+// ==== Chunk getter/setter functions
+// -- Setting
+// size(node) := 3;
+// size(node, 3);
+// -- Getting (assume node is address of header and is valid)
+// out("%d\n", size(node))
+let size(addr, size) be {
+    if numbargs() = 2 then {
+        addr ! 1 := size;
+        addr ! (size - 1) := size;
+        return;
+    }
+    resultis (addr ! 1) }
+let next(chunk, nextaddr) be {
+    if numbargs() = 2 then {
+        chunk ! 0 := nextaddr;
+        return;
+    }
+    resultis (chunk ! 0) }
+// Assume size field has been set by this point
+let prev(chunk, prevaddr) be {
+    let size = size(chunk);
+    if numbargs() = 2 then {
+        chunk ! (size - 2) := prevaddr;
+        return;
+    }
+    resultis (chunk ! (size - 2)) }
+let createnode(addr, size, nextptr, prevptr) be {
+    size(addr, size);
+    prev(addr, prevptr);
+    next(addr, nextptr);
 
     resultis addr }
 
-
+// ==== Utility Functions
+// Get the least significant bit of a 32-bit word and compare to 1.
+// If 1, then this node is in use. Otherwise, we're freee
+let inuse(size_field) be {
+    let lsb = size_field bitand 1;
+    if lsb = 1 then out("chunk in use\n"); // xxx: log
+    resultis lsb = 1 }
 // Assume sizea <= sizeb
-// Assume b is about to be used, so we don't have to have pointers
+// Assume b is about to be used, so we don't need it to have pointers
 let splitnode(baseaddr, sizea, sizeb) be
 {   let blocka, blockb, prev, next;
     blocka := baseaddr;
     blockb := baseaddr + sizea;
-    next := baseaddr ! 0;
-    prev := baseaddr ! (sizea + sizeb - 2);
+    next := next(baseaddr);
+    prev := prev(baseaddr);
 
     createnode(blocka, sizea, next, prev);
     createnode(blockb, sizeb, nil, nil);
 
     resultis blockb }
-
-
-let firstfit_newvec(n) be
-{   let node = headptr;
-    let nodesize;
-    let realn = n + 4;
-    let splitsize;
-
-    // Use a first-fit strategy to get the first chunk with size >= n
-    while node /= nil do {
-        nodesize := node ! 1;
-
-        // Check in use and proper size
-        if (inuse(nodesize)) \/ (nodesize < realn) then {
-            node := node ! 0;
-            loop;
-        }
-
-        // If good, check if worthwhile to split
-        // Every block is a multiple of 16.
-        // Thus, only split this block into two separate ones
-        // if, at a minimum, we can create another 16 block.
-        if nodesize >= (realn + 16) then {
-            // for x positive, floor(n / 16) <=> (n-1)/16 + 1
-            splitsize := ((realn - 1)/16) + 1;
-            node := splitnode(node, splitsize*16, nodesize - (splitsize*16));
-            nodesize := splitsize * 16;
-        }
-
-        // Check if we need to reposition `headptr`, which happens in the case
-        // when we are returning the memory chunk referred to by the current
-        // head pointer. Pass the buck to the next one after that (which
-        // might be nil).
-        if node = headptr then {
-            headptr := headptr ! 0;
-        }
-
-        // Set the node to used (set to an odd number)
-        node ! ((node ! 1) - 1) := nodesize + 1;
-        node ! 1 := nodesize + 1;
-
-        // Return pointer to user's data area.
-        resultis (node + 2);
-    }
-
-    resultis nil }
-
-
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
 let coalesce(leftchunk, rightchunk) be
@@ -133,6 +108,53 @@ let coalesce(leftchunk, rightchunk) be
     //resultis createnode(leftchunk, totalsize, newnext, newprev) }
 
 
+let firstfit_newvec(n) be
+{   let node = headptr;
+    let nodesize;
+    let rchunksize;
+    let realn = n + 4;
+    let splitsize;
+
+    // Use a first-fit strategy to get the first chunk with size >= n
+    while node /= nil do {
+        nodesize := size(node);
+
+        // Check in use and proper size
+        if (inuse(nodesize)) \/ (nodesize < realn) then {
+            node := next(node);
+            loop;
+        }
+
+        // If good, check if worthwhile to split
+        // Every block is a multiple of 16.
+        // Thus, only split this block into two separate ones
+        // if, at a minimum, we can create another 16 block.
+        if nodesize >= (realn + 16) then {
+            rchunksize := splitsize << 4; // n * 16
+            // for x positive, floor(n / 16) <=> (n-1)/16 + 1
+            splitsize := ((realn - 1)/16) + 1;
+            node := splitnode(node, rchunksize, nodesize - rchunksize);
+            nodesize := rchunksize;
+        }
+
+        // Check if we need to reposition `headptr`, which happens in the case
+        // when we are returning the memory chunk referred to by the current
+        // head pointer. Pass the buck to the next one after that (which
+        // might be nil).
+        if node = headptr then {
+            headptr := headptr ! 0;
+        }
+
+        // Set the node to used (set to an odd number)
+        size(node) := nodesize + 1;
+
+        // Return pointer to user's data area.
+        resultis (node + 2);
+    }
+
+    resultis nil }
+
+
 // Place the newly freed node at the front of the linked list of nodes, i.e.
 // reassign `headptr`.
 // Coalesce with neighboring chunks if those are free.
@@ -142,18 +164,18 @@ let firstfit_freevec(addr) be
 
     // Check/coalesce left neighbor
     leftchunk := addr - (addr ! -1);
-    //out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
+    out("chunk to the left starts at %d, has size %d\n", leftchunk, leftchunk ! 1);
     if (leftchunk /= 0) /\ (inuse(leftchunk ! 1) = 0) /\ (leftchunk >= hstart) then {
         out("about to coalesce with left chunk\n");
-        //addr := coalesce(leftchunk, addr);
+        addr := coalesce(leftchunk, addr);
     }
 
     // Check/coalesce right neighbor
     rightchunk := addr + (addr ! 1);
-    //out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
+    out("chunk to the right starts at %d, has size %d\n", rightchunk, rightchunk ! 1);
     if (rightchunk /= 0) /\ (inuse(rightchunk ! 1) = 0) /\ (rightchunk < (hstart + hsize)) then {
         out("about to coalesce with right chunk\n");
-        //addr := coalesce(addr, rightchunk);
+        addr := coalesce(addr, rightchunk);
     }
 
     // Add to headptr
@@ -169,8 +191,6 @@ let firstfit_freevec(addr) be
 // will be far away from stuff in use.
 let probe() be
 { }
-
-
 let init_heap() be
 {   // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
