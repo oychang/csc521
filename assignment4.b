@@ -41,18 +41,21 @@ let size(addr, n) be {
     resultis ((addr ! 1) bitand 0xfffffffe) }
 let next(addr, nextaddr) be {
     if numbargs() = 2 then {
-        out("setting %d next to %d\n", addr, nextaddr); // xxx: log
-        addr ! 0 := nextaddr;
+        out("setting %d next to %d\n", addr, nextaddr);
+        addr ! 0 := nextaddr; // set this node's next
+        if nextaddr /= nil then
+            nextaddr ! (size(nextaddr) - 2) := addr; // set next's previous
         return;
     }
     out("got next of %d as %d\n", addr, nextaddr); // xxx: log
     resultis (addr ! 0) }
-// Assume size field has been set by this point
 let prev(addr, prevaddr) be {
     let n = size(addr);
     if numbargs() = 2 then {
         out("setting %d prev to %d\n", addr, prevaddr); // xxx: log
-        addr ! (n - 2) := prevaddr;
+        addr ! (n - 2) := prevaddr; // set this node's previous
+        if prevaddr /= nil then
+            prevaddr ! 0 := addr; // set previous's next
         return;
     }
     out("got prev of %d as %d\n", addr, (addr ! (n - 2))); // xxx: log
