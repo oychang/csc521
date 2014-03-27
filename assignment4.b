@@ -106,17 +106,11 @@ let coalesce(lchunk, rchunk) be {
     out("newnext = %d, newprev = %d\n", newnext, newprev);
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
+    //let lprev = next(prev(lchunk));
+    //prev(next(rchunk), lprev);
     // d) rightchunk's next's previous becomes leftchunk's previous's next
-
-    //let leftchunk_prev_next = nil, rightchunk_next_prev = nil;
-    //let leftchunk_prev = leftchunk ! ((leftchunk ! 1) - 1);
-    //let rightchunk_next = rightchunk ! 0;
-    // Do this in case either of the above fields are set to nil.
-    //if leftchunk_prev /= nil then {
-    //    leftchunk_prev_next =
-    //}
-    //leftchunk_prev_next = leftchunk_prev ! 0;
-    //rightchunk_next_prev = rightchunk_next ! ()
+    //let rnext = prev(next(rchunk));
+    //next(prev(lchunk), rnext);
 
     resultis create(lchunk, totalsize, newnext, newprev) }
 
