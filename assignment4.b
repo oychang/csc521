@@ -32,12 +32,12 @@ static { hstart = 1024, headptr }
 // off-by-one. The mask compensates for that.
 let size(addr, n) be {
     if numbargs() = 2 then {
-        out("setting size to %d\n", n); // xxx: log
+        //out("setting size to %d\n", n); // xxx: log
         addr ! 1 := n;
         addr ! (n - 1) := n;
         return;
     }
-    out("got size of %d as %d\n", addr, ((addr ! 1) bitand 0xfffffffe)); // xxx: log
+    //out("got size of %d as %d\n", addr, ((addr ! 1) bitand 0xfffffffe)); // xxx: log
     resultis ((addr ! 1) bitand 0xfffffffe) }
 let next(addr, nextaddr) be {
     if numbargs() = 2 then {
@@ -87,7 +87,6 @@ let split(addr, lsize, rsize) be {
     // Return the location of the right node for use in further allocation.
     resultis create(addr + lsize, rsize, nil, nil) }
 
-// TODO: completely borked
 // Collapse down leftchunk and rightchunk into one chunk and return the
 // address that points to the header section of the left, newly combined chunk.
 let coalesce(lchunk, rchunk) be {
@@ -104,11 +103,12 @@ let coalesce(lchunk, rchunk) be {
     // b) rightchunk's previous becomes newchunk's previous
     newprev := prev(rchunk);
 
-    out("got totalsize as %d\n", totalsize);
+    //out("got totalsize as %d\n", totalsize);
     out("newnext = %d, newprev = %d\n", newnext, newprev);
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     // d) rightchunk's next's previous becomes leftchunk's previous's next
+
     //let leftchunk_prev_next = nil, rightchunk_next_prev = nil;
     //let leftchunk_prev = leftchunk ! ((leftchunk ! 1) - 1);
     //let rightchunk_next = rightchunk ! 0;
@@ -201,7 +201,7 @@ let firstfit_freevec(addr) be {
 
     // Add again to headptr if we've coalesced since the last
     // reassignment of headptr
-    headptr := create(addr, size(addr), headptr, nil);
+    headptr := addr;
 
     return }
 
