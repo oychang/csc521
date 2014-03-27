@@ -51,7 +51,7 @@ let next(addr, nextaddr) be {
 let prev(addr, prevaddr) be {
     let n = size(addr);
     if numbargs() = 2 then {
-        out("setting %d next to %d\n", addr, prevaddr); // xxx: log
+        out("setting %d prev to %d\n", addr, prevaddr); // xxx: log
         addr ! (n - 2) := prevaddr;
         return;
     }
@@ -79,6 +79,7 @@ let inuse(n) be {
 // lsize <= rsize and there will be no freelist pointers for rchunk.
 let split(addr, lsize, rsize) be {
     out("splitting now\n"); // xxx: log
+    out("splitting %d into two chunks, size %d and %d\n", addr, lsize, rsize);
     // Reassign all information for the left node.
     create(addr, lsize, next(addr), prev(addr));
     // Return the location of the right node for use in further allocation.
@@ -144,7 +145,7 @@ let firstfit_newvec(n) be {
         // Find out the sizes of the left and right chunks, both 16 divisible.
         if chunks >= (reals + 16) then {
             // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
-            lchunks := ((reals - 1) >> 4) + 1;
+            lchunks := (((reals - 1) >> 4) + 1) * 16;
             rchunks := chunks - lchunks;
             chunk := split(chunk, lchunks, rchunks);
             chunks := rchunks;
@@ -211,12 +212,10 @@ let firstfit_freevec(addr) be {
 let probe() be
 { }
 let init_heap() be {
-    out("initializing heap\n"); // xxx: log
     // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
     // Setup the initial bigass node
-    out("initial allocation\n"); // xxx: log
     hstart +:= probe;
     headptr := create(hstart, hsize, nil, nil);
     return }
