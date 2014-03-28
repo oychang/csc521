@@ -112,10 +112,6 @@ let coalesce(lchunk, rchunk) be {
     newnext := next(lchunk);
     // b) rightchunk's previous becomes newchunk's previous
     newprev := prev(rchunk);
-
-    //out("got totalsize as %d\n", totalsize);
-    out("newnext = %d, newprev = %d\n", newnext, newprev);
-
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     let lprev = next(prev(lchunk));
     //prev(next(rchunk), lprev);
