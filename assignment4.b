@@ -20,59 +20,70 @@ import "io"
 manifest { hsize = 64 }
 static { hstart = 1024, headptr }
 
-// ==== Chunk getter/setter functions
-// -- Setting
-// size(node) := 3;
-// size(node, 3);
-// -- Getting (assume node is address of header and is valid)
-// out("%d\n", size(node))
 
-// Assume that we will only have even sizes...the least significant bit
-// is used for status. Thus, most sizes will be literally represented as
-// off-by-one. The mask compensates for that.
 let size(addr, n) be {
+    // Setter. Assume that address is a valid chunk header and that we can
+    // access up to addr + n - 1 words of memory to set the footer size.
     if numbargs() = 2 then {
-        //out("setting size to %d\n", n); // xxx: log
         addr ! 1 := n;
         addr ! (n - 1) := n;
         return;
     }
-    //out("got size of %d as %d\n", addr, ((addr ! 1) bitand 0xfffffffe)); // xxx: log
+
+    // Getter. Assume address is a valid chunk and that header == footer size.
+    // Assume that we will only have even sizes...the least significant bit
+    // is used for status. Thus, most sizes will be literally represented as
+    // off-by-one. The mask compensates for that.
     resultis ((addr ! 1) bitand 0xfffffffe) }
+
 let next(addr, nextaddr) be {
+    // Setter. Assume addr is a valid chunk. nextaddr might be a valid
+    // memory address for the header of a free chunk, in which case
+    // we set that chunk's previous field, or nil, in which case we just stop
+    // after setting this chunk's next field.
     if numbargs() = 2 then {
-        out("setting %d next to %d\n", addr, nextaddr);
-        addr ! 0 := nextaddr; // set this node's next
+        addr ! 0 := nextaddr;
         if nextaddr /= nil then
-            nextaddr ! (size(nextaddr) - 2) := addr; // set next's previous
+            nextaddr ! (size(nextaddr) - 2) := addr;
         return;
     }
-    out("got next of %d as %d\n", addr, addr ! 0); // xxx: log
-    resultis (addr ! 0) }
+
+    // Getter. Do not assume that addr is valid (useful for chaining).
+    if addr /= nil then
+        resultis (addr ! 0)
+    resultis nil }
+
 let prev(addr, prevaddr) be {
-    let n = size(addr);
+    let n;
+    // Setter. Since the previous field is in the footer, we assume that
+    // this chunk is valid and its size field has been set so we can get
+    // to the previous field, the penultimate word of the chunk.
+    // Behave identically to next() w.r.t. nil 2nd argument.
     if numbargs() = 2 then {
-        out("setting %d prev to %d\n", addr, prevaddr); // xxx: log
-        addr ! (n - 2) := prevaddr; // set this node's previous
+        n := size(addr);
+        addr ! (n - 2) := prevaddr;
         if prevaddr /= nil then
-            prevaddr ! 0 := addr; // set previous's next
+            prevaddr ! 0 := addr;
         return;
     }
-    out("got prev of %d as %d\n", addr, (addr ! (n - 2))); // xxx: log
-    resultis (addr ! (n - 2)) }
+
+    // Getter. Check for nillness (like next()) for chaining reasons.
+    if addr /= nil then {
+        n := size(addr);
+        resultis (addr ! (n - 2));
+    }
+    resultis nil }
+
 let create(addr, chunksize, nextaddr, prevaddr) be {
-    out("creating node at %d, size %d, next %d, prev %d\n", addr, chunksize, nextaddr, prevaddr); // xxx: log
     size(addr, chunksize);
     prev(addr, prevaddr);
     next(addr, nextaddr);
     resultis addr }
 
-// ==== Utility Functions
 // Get the least significant bit of a 32-bit word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
 let inuse(n) be {
     let lsb = n bitand 1;
-    if lsb = 1 then out("chunk in use\n"); // xxx: log
     resultis lsb = 1 }
 
 // Split a single chunk into two smaller ones, a left chunk and a right chunk.
@@ -106,6 +117,7 @@ let coalesce(lchunk, rchunk) be {
     out("newnext = %d, newprev = %d\n", newnext, newprev);
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
+    // TODO: PUT THE LOGIC TO CHECK THIS IN THE GETTER/SETTER
     //let lprev = next(prev(lchunk));
     //prev(next(rchunk), lprev);
     // d) rightchunk's next's previous becomes leftchunk's previous's next
