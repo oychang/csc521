@@ -50,7 +50,7 @@ let next(addr, nextaddr) be {
 
     // Getter. Do not assume that addr is valid (useful for chaining).
     if addr /= nil then
-        resultis (addr ! 0)
+        resultis (addr ! 0);
     resultis nil }
 
 let prev(addr, prevaddr) be {
@@ -102,6 +102,7 @@ let split(addr, lsize, rsize) be {
 let coalesce(lchunk, rchunk) be {
     let lsize, rsize, totalsize;
     let newnext, newprev;
+    let lprev, rnext;
     // Get the new size of the chunk to create
     lsize := size(lchunk);
     rsize := size(rchunk);
@@ -113,11 +114,15 @@ let coalesce(lchunk, rchunk) be {
     // b) rightchunk's previous becomes newchunk's previous
     newprev := prev(rchunk);
     // c) leftchunk's previous's next becomes rightchunk's next's previous
-    let lprev = next(prev(lchunk));
-    //prev(next(rchunk), lprev);
+    lprev := next(prev(lchunk));
+    if (lprev /= nil) /\ (next(rchunk) /= nil) then {
+        prev(next(rchunk), lprev);
+    }
     // d) rightchunk's next's previous becomes leftchunk's previous's next
-    let rnext = prev(next(rchunk));
-    //next(prev(lchunk), rnext);
+    rnext := prev(next(rchunk));
+    if (rnext /= nil) /\ (prev(lchunk) /= nil) then {
+        next(prev(lchunk), rnext);
+    }
 
     resultis create(lchunk, totalsize, newnext, newprev) }
 
