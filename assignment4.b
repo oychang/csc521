@@ -197,7 +197,7 @@ let firstfit_freevec(addr) be {
     }
 
     rchunk := addr + size(addr);
-    if (rchunk < (hstart + hsize)) /\ (inuse(size(rchunk)) = 0)  then {
+    if (rchunk < (hstart + hsize)) /\ (inuse(size(rchunk)) = 0) then {
         out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
         out("about to coalesce with right chunk\n");
         addr := coalesce(addr, rchunk);
@@ -240,11 +240,12 @@ let start() be {
     }
     out("\n");
 
-//    b := newvec(60);
-//    test b = nil then {
-//        out("b is nil\n");
-//    } else {
-//        freevec(b);
-//    }
+    b := newvec(60);
+    test b = nil then {
+        out("b is nil\n");
+    } else {
+        out("freeing b...\n");
+        freevec(b);
+    }
 
     return }
