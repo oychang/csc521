@@ -46,14 +46,12 @@ let next(addr, nextaddr) be {
     // after setting this chunk's next field.
     if numbargs() = 2 then {
         addr ! 0 := nextaddr;
-        if nextaddr /= nil then
-            nextaddr ! (size(nextaddr) - 2) := addr;
+        if nextaddr /= nil then nextaddr ! (size(nextaddr) - 2) := addr;
         return;
     }
 
     // Getter. Do not assume that addr is valid (useful for chaining).
-    if addr /= nil then
-        resultis (addr ! 0);
+    if addr /= nil then resultis (addr ! 0);
     resultis nil }
 
 let prev(addr, prevaddr) be {
@@ -65,8 +63,7 @@ let prev(addr, prevaddr) be {
     if numbargs() = 2 then {
         n := size(addr);
         addr ! (n - 2) := prevaddr;
-        if prevaddr /= nil then
-            prevaddr ! 0 := addr;
+        if prevaddr /= nil then prevaddr ! 0 := addr;
         return;
     }
 
@@ -86,8 +83,7 @@ let create(addr, chunksize, nextaddr, prevaddr) be {
 // Get the least significant bit of a 32-bit word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
 let inuse(n) be {
-    let lsb = n bitand 1;
-    resultis lsb = 1 }
+    resultis (n bitand 1) = 1 }
 
 // Split a single chunk into two smaller ones, a left chunk and a right chunk.
 // We'll leave the left chunk as close to the original as possible so we
@@ -118,14 +114,10 @@ let coalesce(lchunk, rchunk) be {
     newprev := prev(rchunk);
     // c) leftchunk's previous's next becomes rightchunk's next's previous
     lprev := next(prev(lchunk));
-    if (lprev /= nil) /\ (next(rchunk) /= nil) then {
-        prev(next(rchunk), lprev);
-    }
+    if (lprev /= nil) /\ (next(rchunk) /= nil) then prev(next(rchunk), lprev);
     // d) rightchunk's next's previous becomes leftchunk's previous's next
     rnext := prev(next(rchunk));
-    if (rnext /= nil) /\ (prev(lchunk) /= nil) then {
-        next(prev(lchunk), rnext);
-    }
+    if (rnext /= nil) /\ (prev(lchunk) /= nil) then next(prev(lchunk), rnext);
 
     resultis create(lchunk, totalsize, newnext, newprev) }
 
@@ -161,9 +153,7 @@ let firstfit_newvec(n) be {
         // when we are returning the memory chunk referred to by the current
         // head pointer. Pass the buck to the next one after that (which
         // might be nil).
-        if chunk = headptr then {
-            headptr := next(headptr);
-        }
+        if chunk = headptr then headptr := next(headptr);
 
         // Set the node to used (set to an odd number)
         size(chunk, chunks + 1);
