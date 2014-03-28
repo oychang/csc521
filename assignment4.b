@@ -1,13 +1,15 @@
-import "io"
+//=============================================================================
+// Oliver Chang, March 2014, CSC521: Computer Operating Systems
+// Assignment 4: Implementing newvec & freevec
+// http://rabbit.eng.miami.edu/class/een521/ass4-142.txt
 
-// Much lecture notes. Such helpful. Wow.
-// http://www.cs.princeton.edu/courses/archive/spr11/cos217/lectures/20DynamicMemory2.pdf
-// ~~~~~~~~~~~~~~~~~~~~~~~ Anatomy of a Chunk of Memory ~~~~~~~~~~~~~~~~~~~~~~~
-//    |======================================================================|
-//    |             Header            | Data |             Footer            |
-//    |-------------------------------|------|-------------------------------|
-//    | FreePtr (Next) | Size / InUse | .... | FreePtr (Prev) | Size / InUse |
-//    |======================================================================|
+//   ~~~~~~~~~~~~~~~~~~~~ Anatomy of a Chunk of Memory ~~~~~~~~~~~~~~~~~~~~~~
+//   |======================================================================|
+//   |             Header            | Data |             Footer            |
+//   |-------------------------------|------|-------------------------------|
+//   | FreePtr (Next) | Size / InUse | .... | FreePtr (Prev) | Size / InUse |
+//   |======================================================================|
+
 // Let the minimum amount of allocatable memory be 16 blocks
 // Let each chunk of memory be divisible by 16, e.g. 16, 32, 48, 64, ...
 // Let each chunk of memory be node a in a doubly linked list
@@ -16,10 +18,11 @@ import "io"
 // Let the footer be two words: a poitner the the previous free & real size
 // Usable size of the chunk = real size - 4
 // All chunks will have an even size => last bit of size used for in-use flag
+//=============================================================================
 
+import "io"
 manifest { hsize = 64 }
 static { hstart = 1024, headptr }
-
 
 let size(addr, n) be {
     // Setter. Assume that address is a valid chunk header and that we can
@@ -126,7 +129,6 @@ let coalesce(lchunk, rchunk) be {
 
     resultis create(lchunk, totalsize, newnext, newprev) }
 
-
 let firstfit_newvec(n) be {
     let chunk = headptr; // Where to start search for available chunks.
 
@@ -173,7 +175,6 @@ let firstfit_newvec(n) be {
     // User should check the return value of this function for this case.
     resultis nil }
 
-
 // Place the newly freed node at the front of the linked list of nodes, i.e.
 // reassign `headptr`.
 // Coalesce with neighboring chunks if those are free.
@@ -209,20 +210,14 @@ let firstfit_freevec(addr) be {
 
     return }
 
-
-// Let the memory address that marks the beginning of heap memory
-// be 1024 words away from our OS stuff (this program).
-// Assume that this is far away and do not do the entire probe process.
-// Ensure this is at the end of the program so that its address
-// will be far away from stuff in use.
-let probe() be
-{ }
 let init_heap() be {
     // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
+    // Let the heap start at 1024 words after this function in memory.
+    // Arbitrary number found in the starting value of hstart.
+    hstart +:= init_heap;
     // Setup the initial bigass node
-    hstart +:= probe;
     headptr := create(hstart, hsize, nil, nil);
     return }
 
