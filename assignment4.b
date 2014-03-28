@@ -117,11 +117,10 @@ let coalesce(lchunk, rchunk) be {
     out("newnext = %d, newprev = %d\n", newnext, newprev);
 
     // c) leftchunk's previous's next becomes rightchunk's next's previous
-    // TODO: PUT THE LOGIC TO CHECK THIS IN THE GETTER/SETTER
-    //let lprev = next(prev(lchunk));
+    let lprev = next(prev(lchunk));
     //prev(next(rchunk), lprev);
     // d) rightchunk's next's previous becomes leftchunk's previous's next
-    //let rnext = prev(next(rchunk));
+    let rnext = prev(next(rchunk));
     //next(prev(lchunk), rnext);
 
     resultis create(lchunk, totalsize, newnext, newprev) }
