@@ -149,7 +149,7 @@ let firstfit_newvec(n) be {
         // Find out the sizes of the left and right chunks, both 16 divisible.
         if chunks >= (reals + 16) then {
             // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
-            rchunks := (((reals - 1) >> 4) + 1) * 16;
+            rchunks := (((reals - 1) >> 4) + 1) << 4;
             lchunks := chunks - rchunks;
             chunk := split(chunk, lchunks, rchunks);
             chunks := rchunks;
