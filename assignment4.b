@@ -21,15 +21,25 @@
 //=============================================================================
 
 import "io"
-manifest { hsize = 64 }
+manifest {
+    // Offsets that correlate with the chunk diagram above
+    node_next = 0,
+    node_size = 1,
+    node_prev = 2,
+    // 2 word header, footer
+    node_metadata_left = 2,
+    node_metadata_right = 2,
+    node_metadata_total = 4,
+    node_min_size = 16,
+    hsize = 64 }
 static { hstart = 1024, headptr }
 
 let size(addr, n) be {
     // Setter. Assume that address is a valid chunk header and that we can
-    // access up to addr + n - 1 words of memory to set the footer size.
+    // access up to addr + n - node_size words of memory to set the footer size.
     if numbargs() = 2 then {
-        addr ! 1 := n;
-        addr ! (n - 1) := n;
+        addr ! node_size := n;
+        addr ! (n - node_size) := n;
         return;
     }
 
@@ -37,7 +47,7 @@ let size(addr, n) be {
     // Assume that we will only have even sizes...the least significant bit
     // is used for status. Thus, most sizes will be literally represented as
     // off-by-one. The mask compensates for that.
-    resultis ((addr ! 1) bitand 0xfffffffe) }
+    resultis ((addr ! node_size) bitand 0xfffffffe) }
 
 let next(addr, nextaddr) be {
     // Setter. Assume addr is a valid chunk. nextaddr might be a valid
@@ -45,13 +55,13 @@ let next(addr, nextaddr) be {
     // we set that chunk's previous field, or nil, in which case we just stop
     // after setting this chunk's next field.
     if numbargs() = 2 then {
-        addr ! 0 := nextaddr;
-        if nextaddr /= nil then nextaddr ! (size(nextaddr) - 2) := addr;
+        addr ! node_next := nextaddr;
+        if nextaddr /= nil then nextaddr ! (size(nextaddr) - node_prev) := addr;
         return;
     }
 
     // Getter. Do not assume that addr is valid (useful for chaining).
-    if addr /= nil then resultis (addr ! 0);
+    if addr /= nil then resultis (addr ! node_next);
     resultis nil }
 
 let prev(addr, prevaddr) be {
@@ -62,15 +72,15 @@ let prev(addr, prevaddr) be {
     // Behave identically to next() w.r.t. nil 2nd argument.
     if numbargs() = 2 then {
         n := size(addr);
-        addr ! (n - 2) := prevaddr;
-        if prevaddr /= nil then prevaddr ! 0 := addr;
+        addr ! (n - node_prev) := prevaddr;
+        if prevaddr /= nil then prevaddr ! node_next := addr;
         return;
     }
 
     // Getter. Check for nillness (like next()) for chaining reasons.
     if addr /= nil then {
         n := size(addr);
-        resultis (addr ! (n - 2));
+        resultis (addr ! (n - node_prev));
     }
     resultis nil }
 
@@ -80,10 +90,10 @@ let create(addr, chunksize, nextaddr, prevaddr) be {
     next(addr, nextaddr);
     resultis addr }
 
-// Get the least significant bit of a 32-bit word and compare to 1.
+// Get the least significant bit of a 32-bit size word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
 let inuse(n) be {
-    resultis (n bitand 1) = 1 }
+    resultis (n bitand 1) }
 
 // Split a single chunk into two smaller ones, a left chunk and a right chunk.
 // We'll leave the left chunk as close to the original as possible so we
@@ -125,7 +135,7 @@ let firstfit_newvec(n) be {
     let chunk = headptr; // Where to start search for available chunks.
 
     let chunks; // Current search chunk size
-    let reals = n + 4; // 2 word header, footer
+    let reals = n + node_metadata_total;
     let lchunks, rchunks; // For use in splitting
 
     while chunk /= nil do {
@@ -141,9 +151,9 @@ let firstfit_newvec(n) be {
         // Only split this block into two separate ones if, at a minimum,
         // we can create another 16 block.
         // Find out the sizes of the left and right chunks, both 16 divisible.
-        if chunks >= (reals + 16) then {
+        if chunks >= (reals + node_min_size) then {
             // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
-            rchunks := (((reals - 1) >> 4) + 1) << 4;
+            rchunks := (((reals - 1) / node_min_size) + 1) * node_min_size;
             lchunks := chunks - rchunks;
             chunk := split(chunk, lchunks, rchunks);
             chunks := rchunks;
@@ -158,7 +168,7 @@ let firstfit_newvec(n) be {
         // Set the node to used (set to an odd number)
         size(chunk, chunks + 1);
         // Return pointer to user's data area.
-        resultis (chunk + 2);
+        resultis (chunk + node_metadata_left);
     }
 
     // If there are no available chunks for allocation.
@@ -171,7 +181,7 @@ let firstfit_newvec(n) be {
 let firstfit_freevec(addr) be {
     let lchunk, rchunk;
     // Include the header data
-    addr -:= 2;
+    addr -:= node_metadata_left;
 
     // Free the chunk and add to the front of the freelist
     headptr := create(addr, size(addr), headptr, nil);
@@ -180,7 +190,7 @@ let firstfit_freevec(addr) be {
     // not in the freelist but by address.
     // If those are free, then combine either or both with the newly freed
     // chunk to combat fragmentation.
-    if ((addr - 1) >= hstart) /\ (inuse(addr ! -1) = 0) then {
+    if ((addr - node_size) >= hstart) /\ (not inuse(addr ! -node_size)) then {
         lchunk := addr - (addr ! -1);
         out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
         out("about to coalesce with left chunk\n");
@@ -188,7 +198,7 @@ let firstfit_freevec(addr) be {
     }
 
     rchunk := addr + size(addr);
-    if (rchunk < (hstart + hsize)) /\ (inuse(size(rchunk)) = 0) then {
+    if (rchunk < (hstart + hsize)) /\ (not inuse(size(rchunk))) then {
         out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
         out("about to coalesce with right chunk\n");
         addr := coalesce(addr, rchunk);
