@@ -6,7 +6,8 @@ manifest {
     node_key = 0,
     node_left = 1,
     node_right = 2,
-    sizeof_node = 3
+    sizeof_node = 3,
+    heap_size = 10000
 }
 
 // Allocate three words of contiguous memory on the heap and set the
@@ -23,8 +24,7 @@ let pprint_list(start, reversed) be {
     let node = start;
     // Setup which direction we're going by changing which field of the node
     // we look at to get the next one.
-    let offset;
-    test reversed then offset := node_left else offset := node_right;
+    let offset = reversed -> node_left, node_right;
 
     out("X<-->");
     while node /= nil do {
@@ -35,6 +35,8 @@ let pprint_list(start, reversed) be {
 
     return }
 
+// NB: the default implementation of freevec() calls lamest_freevec() which
+// is an empty function, i.e. freeing does not do anything by default
 let free_list(head) be {
     let node = head;
     let tmp;
@@ -50,10 +52,8 @@ let free_list(head) be {
 let start() be {
     let head = nil, tail = nil, input = -1, SENTINEL = -1;
     let new_node = nil;
-    // The two numbers here should match up; they must be compile-time
-    // constants though, so we do not use a variable.
-    let heap = vec(10000);
-    init(heap, 10000);
+    let heap = vec(heap_size);
+    init(heap, heap_size);
 
     out("add numbers to doubly linked list\n");
     out("insert ");
