@@ -223,29 +223,24 @@ let init_heap() be {
 
 
 let start() be {
-    let a, b, c;
+    let a, b;
     init_heap();
 
-    // test: allocate three objects
-    // free the middle one first, then the other two
-    // check after and make sure we just have one big chunk (that we coalesced)
     a := newvec(10);
-    b := newvec(10);
-    c := newvec(10);
+    test a = nil then {
+        out("a is nil\n");
+    } else {
+        out("freeing a...\n");
+        freevec(a);
+    }
+    out("\n");
 
-    test a = nil \/ b = nil \/ c = nil then {
-        out("bad allocations...a or b or c is nil\n");
+    b := newvec(60);
+    test b = nil then {
+        out("b is nil\n");
     } else {
         out("freeing b...\n");
         freevec(b);
-
-        out("\nfreeing a...\n");
-        freevec(a);
-
-        out("\nfreeing c...\n");
-        freevec(c);
-
-        out("size of heap space for allocation is %d (should be %d)", size(headptr), hsize);
     }
 
     return }
