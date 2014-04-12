@@ -1,6 +1,6 @@
 //=============================================================================
-// Oliver Chang, March 2014, CSC521: Computer Operating Systems
-// Assignment 4: Implementing newvec & freevec
+// Oliver Chang, April 2014, CSC521: Computer Operating Systems
+// Assignment 4+: Implementing newvec & freevec
 // http://rabbit.eng.miami.edu/class/een521/ass4-142.txt
 
 //   ~~~~~~~~~~~~~~~~~~~~ Anatomy of a Chunk of Memory ~~~~~~~~~~~~~~~~~~~~~~
@@ -12,10 +12,12 @@
 
 // Let the minimum amount of allocatable memory be 16 blocks
 // Let each chunk of memory be divisible by 16, e.g. 16, 32, 48, 64, ...
-// Let each chunk of memory be node a in a doubly linked list
+// Let each chunk of memory be a node in a doubly linked list
 // Let each node have a header and a footer
 // Let the header be two words: a pointer to the next free & real size of block
 // Let the footer be two words: a poitner the the previous free & real size
+// Use a 5-bin exact-fit strategy:
+// Bin1 = freelist of 16s,..., Bin4 = freelist of 64s, Bin5 = everything larger
 // Usable size of the chunk = real size - 4
 // All chunks will have an even size => last bit of size used for in-use flag
 //=============================================================================
