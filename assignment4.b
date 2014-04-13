@@ -22,6 +22,7 @@
 //=============================================================================
 
 import "io"
+
 manifest {
     // Offsets that correlate with the chunk diagram above
     node_next = 0,
@@ -32,6 +33,7 @@ manifest {
     node_metadata_right = 2,
     node_metadata_total = 4,
     node_min_size = 16 }
+
 static {
     // Initial value that estimates program stack use
     hstart = 256,
@@ -194,8 +196,8 @@ let firstfit_freevec(addr) be {
     // Free the chunk and add to the front of the freelist
     headptr := create(addr, size(addr), headptr, nil);
 
-    // Now, check the chunks of memory to the right and to the left of the chunk,
-    // not in the freelist but by address.
+    // Now, check the chunks of memory to the right and to the left of
+    // the chunk, not in the freelist but by address.
     // If those are free, then combine either or both with the newly freed
     // chunk to combat fragmentation.
     if ((addr - node_size) >= hstart) /\ (not inuse(addr ! -node_size)) then {
