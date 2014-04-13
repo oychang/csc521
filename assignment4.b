@@ -2,21 +2,20 @@
 // Oliver Chang, April 2014, CSC521: Computer Operating Systems
 // Assignment 4+: Implementing newvec & freevec
 // http://rabbit.eng.miami.edu/class/een521/ass4-142.txt
-
+//
 //   ~~~~~~~~~~~~~~~~~~~~ Anatomy of a Chunk of Memory ~~~~~~~~~~~~~~~~~~~~~~
 //   |======================================================================|
 //   |             Header            | Data |             Footer            |
 //   |-------------------------------|------|-------------------------------|
 //   | FreePtr (Next) | Size / InUse | .... | FreePtr (Prev) | Size / InUse |
 //   |======================================================================|
-
 // Let the minimum amount of allocatable memory be 16 blocks
 // Let each chunk of memory be divisible by 16, e.g. 16, 32, 48, 64, ...
 // Let each chunk of memory be a node in a doubly linked list
 // Let each node have a header and a footer
 // Let the header be two words: a pointer to the next free & real size of block
 // Let the footer be two words: a poitner the the previous free & real size
-// Use a 5-bin exact-fit strategy:
+// TODO: Use a 5-bin exact-fit strategy:
 // Bin1 = freelist of 16s,..., Bin4 = freelist of 64s, Bin5 = everything larger
 // Usable size of the chunk = real size - 4
 // All chunks will have an even size => last bit of size used for in-use flag
@@ -194,15 +193,11 @@ let firstfit_freevec(addr) be {
     // chunk to combat fragmentation.
     if ((addr - node_size) >= hstart) /\ (not inuse(addr ! -node_size)) then {
         lchunk := addr - (addr ! -1);
-        out("chunk to the left starts at %d, has size %d\n", lchunk, size(lchunk));
-        out("about to coalesce with left chunk\n");
         addr := coalesce(lchunk, addr);
     }
 
     rchunk := addr + size(addr);
     if (rchunk < (hstart + hsize)) /\ (not inuse(size(rchunk))) then {
-        out("chunk to the right starts at %d, has size %d\n", rchunk, size(addr));
-        out("about to coalesce with right chunk\n");
         addr := coalesce(addr, rchunk);
     }
 
