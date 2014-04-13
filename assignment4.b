@@ -31,9 +31,13 @@ manifest {
     node_metadata_left = 2,
     node_metadata_right = 2,
     node_metadata_total = 4,
-    node_min_size = 16,
-    hsize = 64 }
-static { hstart = 1024, headptr }
+    node_min_size = 16 }
+static {
+    // initial value estimates program stack use
+    hstart = 256,
+    // default value
+    hsize = 64,
+    headptr = nil }
 
 let size(addr, n) be {
     // Setter. Assume that address is a valid chunk header and that we can
@@ -93,8 +97,13 @@ let create(addr, chunksize, nextaddr, prevaddr) be {
 
 // Get the least significant bit of a 32-bit size word and compare to 1.
 // If 1, then this node is in use. Otherwise, we're freee
-let inuse(n) be {
-    resultis (n bitand 1) }
+let inuse(n) be
+    resultis (n bitand 1)
+
+// for example, f(33) = 48; f(14) = 16
+// take advantage of fact that for x positive, ceil(n / 16) <=> (n-1)/16 + 1
+let to_16_divisible(n) be
+    resultis (((n - 1) / node_min_size) + 1) * node_min_size
 
 // Split a single chunk into two smaller ones, a left chunk and a right chunk.
 // We'll leave the left chunk as close to the original as possible so we
@@ -153,8 +162,7 @@ let firstfit_newvec(n) be {
         // we can create another 16 block.
         // Find out the sizes of the left and right chunks, both 16 divisible.
         if chunks >= (reals + node_min_size) then {
-            // For x positive, ceil(n / 16) <=> (n-1)/16 + 1
-            rchunks := (((reals - 1) / node_min_size) + 1) * node_min_size;
+            rchunks := to_16_divisible(reals);
             lchunks := chunks - rchunks;
             chunk := split(chunk, lchunks, rchunks);
             chunks := rchunks;
@@ -207,13 +215,25 @@ let firstfit_freevec(addr) be {
 
     return }
 
+// Return the first address that nothing's been loaded into.
+// From 0x101 to 0x0, the space is unused for static junk, but stack will
+// grow so this is not all available for heap.
+// (Experimentally, this value is 1029.)
+let probe() be {
+    let result = 0;
+    assembly {
+        load  r1, [0x101]
+        store r1, [<result>] }
+    resultis result }
+
 let init_heap() be {
     // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
-    // Let the heap start at 1024 words after this function in memory.
-    // Arbitrary number found in the starting value of hstart.
-    hstart +:= init_heap;
+    hstart := probe() - hstart;
+    // Get the size available for heap.
+    // sample runs: f(14) = 0; f(17) = 16
+    hsize := (hstart / node_min_size) * node_min_size;
     // Setup the initial bigass node
     headptr := create(hstart, hsize, nil, nil);
     return }
