@@ -33,10 +33,9 @@ manifest {
     node_metadata_total = 4,
     node_min_size = 16 }
 static {
-    // initial value estimates program stack use
+    // Initial value that estimates program stack use
     hstart = 256,
-    // default value
-    hsize = 64,
+    hsize = 0,
     headptr = nil }
 
 let size(addr, n) be {
@@ -215,25 +214,34 @@ let firstfit_freevec(addr) be {
 
     return }
 
-// Return the first address that nothing's been loaded into.
-// From 0x101 to 0x0, the space is unused for static junk, but stack will
-// grow so this is not all available for heap.
-// (Experimentally, this value is 1029.)
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Memory Diagram ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// 0                                                                    [0x100]
+//-----------------------------------------------------------------------------
+// |||||||||||||||&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&|&|&|&|&|&|&|&|||||||||||||
+//     [0x101]---^          free space              [future stack]    stack
+// So, free space = heap space = 0x100 - (0x101 + anticipated total stack size)
+// We return the lowest address of free space ([0x101]) & set hsize.
 let probe() be {
-    let result = 0;
+    let result = 0, new_size;
     assembly {
         load  r1, [0x101]
-        store r1, [<result>] }
+        store r1, [<result>]
+        load  r2, [0x100]
+        sub   r2, r1
+        store r2, [<new_size>] }
+    // Reduce anticipated newsize by a semi-arbitrary amount.
+    // Assume hstart hasn't yet been changed from it's initial value.
+    new_size -:= hstart;
+    // Make sure new_size is divisible by our chunk size before setting.
+    // sample new_size values: f(14) = 0; f(17) = 16
+    hsize := (new_size / node_min_size) * node_min_size;
     resultis result }
 
 let init_heap() be {
     // Override the static declarations of newvec and freevec
     newvec := firstfit_newvec;
     freevec := firstfit_freevec;
-    hstart := probe() - hstart;
-    // Get the size available for heap.
-    // sample runs: f(14) = 0; f(17) = 16
-    hsize := (hstart / node_min_size) * node_min_size;
+    hstart := probe();
     // Setup the initial bigass node
     headptr := create(hstart, hsize, nil, nil);
     return }
