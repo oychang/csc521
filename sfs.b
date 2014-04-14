@@ -21,19 +21,21 @@ static {
 // find empty space of size, make sure space on disc (split if have to)
 // setup header fields
 // return address
-let write(fn, size) be {
+let open_w(fn, size) be {
     resultis nil }
 
 // TODO
 // traverse until find file or a size of -1
 // return address if found or -1
-let read(fn) be {
+let open_r(fn) be {
+// bksread = devctl(DC_DISC_READ, 1,
+// firstblocknum, numblocks, memoryaddress);
     resultis nil }
 
 // Utility function to emulate C's open()
 let open(fn, mode, size) be {
-    if mode = 'w' then resultis write(fn, size);
-    resultis read(fn) }
+    if mode = 'w' then resultis open_w(fn, size);
+    resultis open_r(fn) }
 
 // Setup size constants and consistent block structure.
 let setup_fs() be {
@@ -43,7 +45,7 @@ let setup_fs() be {
     max_size := devctl(DC_DISC_CHECK, 1);
     if max_size < 1 then {
         outs("dc_disc_check: got disc 1 size as 0\n");
-        return; }
+        resultis -1; }
 
     // Set the initial block to be unoccupied.
     // Adopt the convention that a size value of -1 indicates that this
@@ -52,18 +54,17 @@ let setup_fs() be {
     vec ! 0 := -1;
     if devctl(DC_DISC_WRITE, 1, 1, empty) < 0 then {
         outs("dc_disc_write: could not write initial chunk\n");
-        return; }
+        resultis -1; }
 
-    return }
+    resultis 0 }
 
 let start() be {
     let f;
 
-    setup_fs();
-
+    if setup_fs() = -1 then return;
     f := open("readme.txt", 'w', 10);
-
-    // bksread = devctl(DC_DISC_READ, 1,
-    firstblocknum, numblocks, memoryaddress);
+    if f = nil then {
+        outs("could not open file\n");
+        return; }
 
     return }
