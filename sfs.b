@@ -19,14 +19,46 @@ manifest {
 static {
     max_block = 0,
     availspace = 0,
+    writefile = 0,
+    readfile = 0,
     writeptr = 0,
     readptr = 0
 }
 
-let read(addr, dest) be {}
+// Because of the way we handle file descriptors (i.e. we don't) this doesn't
+// need to do anything besides reset the pointers.
+let close(faddr) be {
+    if faddr = writefile {
+        writefile := 0;
+        writeptr := 0;
+    }
+    if faddr = readfile {
+        readfile := 0;
+        readptr := 0;
+    }
+
+    out("invalid file...hasn't been opened yet\n");
+    resultis -1 }
+
+// TODO--first call on open to find the start address, then set size fields
+let delete(name) be {
+    let buf = vec words_per_block;
+
+    // Get the starting address of the file
+    let addr = open(name, 'w');
+    if addr = -1 then {
+        out("could not delete file %s\n", name);
+        resultis -1
+    }
+
+    //devctl(DC_DISC)
+}
+
+// TODO--check size, get chunk
+let read(ptr, dest, bytes) be {}
+
+// TODO
 let write(addr, src) be {}
-let delete(name) be {}
-let close() be {}
 
 // TODO--size in words
 let create(fn, size) be {
@@ -66,7 +98,6 @@ let strcmp(a, b) be {
     for i = 0 to max_file_name_chars do {
         let ac = byte i of a;
         let bc = byte i of b;
-
         if ac /= bc then resultis -1;
         if ac = 0 /\ bc = 0 then resultis 0;
     }
@@ -75,12 +106,12 @@ let strcmp(a, b) be {
 
 // size is given in bytes
 let memcpy(dest, src, size) be {
-    for i = 0 to size do {
+    for i = 0 to size do
         dest ! i := src ! i;
-    }
     return }
 
-// Returns address of file start in memory or -1 if not found
+// Returns address of file start in memory or -1 if not found.
+// Pretty much acts like a linear find().
 let open(fn, mode) be {
     let buf = vec words_per_block;
     let file_start = 0;
@@ -125,16 +156,5 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
-    let a, b, c;
-    let d, e = vec 4;
-    a := strcmp("howdy", "ho");
-    b := strcmp("wha", "t's up");
-    c := strcmp("cat", "hat");
-
-    out("%d %d %d\n", a, b, c);
-
-    d := table 0, 1, 2, 3;
-    memcpy(e, d, 4);
-    out("%d %d %d %d\n", e ! 0, e ! 1, e ! 2, e ! 3);
-
+    let x = create("README.txt", 10);
     return }
