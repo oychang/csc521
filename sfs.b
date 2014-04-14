@@ -42,17 +42,20 @@ let close(faddr) be {
     out("invalid file...hasn't been opened yet\n");
     resultis -1 }
 
-// TODO--first call on open to find the start address, then set size fields
+// First call on open to find the start address, then set size fields
 let delete(name) be {
     let buf = vec words_per_block;
 
     // Get the starting address of the file
     let addr = open(name, 'w');
     if addr = -1 then {
-        out("could not delete file %s\n", name);
+        out("could not find file %s\n", name);
         resultis -1; }
 
-    //devctl(DC_DISC)
+    // Get metadata. Store used size as 0 leaving rest untouched.
+    devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
+    buf ! offset_used_size := 0;
+    devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
 }
 
 // TODO--check size, get chunk
