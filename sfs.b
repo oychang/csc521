@@ -1,9 +1,15 @@
 import "io"
 
 manifest {
+    disc_number = 1,
     words_per_block = 128,
     file_size_words = 1,
-    file_name_words = 8
+    file_name_words = 8,
+    metadata_block_size = 1
+}
+
+manifest {
+    offset_size = 0
 }
 
 static {
@@ -28,8 +34,14 @@ let open_w(fn, size) be {
 // traverse until find file or a size of -1
 // return address if found or -1
 let open_r(fn) be {
-// bksread = devctl(DC_DISC_READ, 1,
-// firstblocknum, numblocks, memoryaddress);
+    let buf = vec words_per_block;
+    let file_start_word = 0;
+
+    while file_start_word <= max_size do {
+        devctl(DC_DISC_READ, disc_number, 0, metadata_block_size, buf);
+
+    }
+
     resultis nil }
 
 // Utility function to emulate C's open()
@@ -42,17 +54,17 @@ let setup_fs() be {
     let empty;
 
     // Get the total usable size of the disc.
-    max_size := devctl(DC_DISC_CHECK, 1);
+    max_size := devctl(DC_DISC_CHECK, disc_number);
     if max_size < 1 then {
         outs("dc_disc_check: got disc 1 size as 0\n");
         resultis -1; }
 
     // Set the initial block to be unoccupied.
-    // Adopt the convention that a size value of -1 indicates that this
-    // is the last chunk.
+    // Note: empty will not be initialized...assume contents past size field
+    // will not be inspected.
     empty := vec words_per_block;
-    vec ! 0 := -1;
-    if devctl(DC_DISC_WRITE, 1, 1, empty) < 0 then {
+    vec ! offset_size := -1;
+    if devctl(DC_DISC_WRITE, disc_number, metadata_block_size, empty) < 0 then {
         outs("dc_disc_write: could not write initial chunk\n");
         resultis -1; }
 
