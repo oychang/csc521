@@ -31,11 +31,11 @@ let close(faddr) be {
     if faddr = writefile {
         writefile := 0;
         writeptr := 0;
-    }
+        resultis 0; }
     if faddr = readfile {
         readfile := 0;
         readptr := 0;
-    }
+        resultis 0; }
 
     out("invalid file...hasn't been opened yet\n");
     resultis -1 }
