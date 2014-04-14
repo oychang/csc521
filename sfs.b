@@ -1,7 +1,9 @@
 import "io"
 
 manifest {
-    words_per_block = 128
+    words_per_block = 128,
+    file_size_words = 1,
+    file_name_words = 8
 }
 
 static {
@@ -12,11 +14,10 @@ static {
 }
 
 // TODO
-// 32 char names (31 usable) => 8 words
-// ondisc size (1 word) + datasize (1 word) + name (8 words)
 // let findfree(start, size) be {
 //     resultis nil }
 
+// TODO
 // find empty space of size, make sure space on disc (split if have to)
 // setup header fields
 // return address
@@ -24,6 +25,8 @@ let write(fn, size) be {
     resultis nil }
 
 // TODO
+// traverse until find file or a size of -1
+// return address if found or -1
 let read(fn) be {
     resultis nil }
 
