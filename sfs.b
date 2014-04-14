@@ -3,6 +3,7 @@ import "io"
 manifest {
     disc_number = 1,
     words_per_block = 128,
+    bytes_per_word = 4,
     file_size_words = 1,
     file_name_words = 8,
     metadata_block_size = 1
@@ -10,7 +11,7 @@ manifest {
 
 manifest {
     offset_size = 0,
-    offsed_used_size = 1,
+    offset_used_size = 1,
     offset_file_name = 2,
     max_file_name_chars = 32
 }
@@ -22,13 +23,14 @@ static {
     readptr = 0
 }
 
-let create(name, size) be {}
+let read(addr, dest) be {}
+let write(addr, src) be {}
 let delete(name) be {}
 let close() be {}
 
 // TODO--size in words
 let create(fn, size) be {
-    let buf = vec words_per_block
+    let buf = vec words_per_block;
     let addr = 0;
     let name = "";
     let tmp_size = 0;
@@ -36,7 +38,7 @@ let create(fn, size) be {
     // Now represents the total number of words we need for the file
     size +:= file_size_words + file_size_words + file_name_words;
     // Convert into the number of blocks we need to represent
-    size := (((size - 1) / words_per_block) + 1)
+    size := (((size - 1) / words_per_block) + 1);
 
     while addr <= max_block do {
         tmp_size := buf ! offset_used_size;
@@ -71,13 +73,12 @@ let strcmp(a, b) be {
 
     resultis 1 }
 
-// size is given in blocks
-//let memcpy(dest, src, size) be {
-//    size *:= words_per_block;
-//    for i = 0 to size do {
-//        byte i of dest := byte i of src;
-//    }
-//    return }
+// size is given in bytes
+let memcpy(dest, src, size) be {
+    for i = 0 to size do {
+        dest ! i := src ! i;
+    }
+    return }
 
 // Returns address of file start in memory or -1 if not found
 let open(fn, mode) be {
@@ -102,11 +103,11 @@ let open(fn, mode) be {
 
 // Setup size constants and consistent block structure.
 let setup_fs() be {
-    let empty;
+    let empty = vec words_per_block;
 
     // Get the total usable size of the disc.
-    max_blocks := devctl(DC_DISC_CHECK, disc_number);
-    if max_blocks < 1 then {
+    max_block := devctl(DC_DISC_CHECK, disc_number);
+    if max_block < 1 then {
         outs("dc_disc_check: got disc 1 size as 0\n");
         resultis -1;
     }
@@ -114,8 +115,7 @@ let setup_fs() be {
     // Set the initial block to be unoccupied.
     // Note: empty will not be initialized...assume contents past size field
     // will not be inspected.
-    empty := vec words_per_block;
-    empty ! offset_size := -1;
+    empty ! offset_size      := -1;
     empty ! offset_used_size := -1;
     if devctl(DC_DISC_WRITE, disc_number, metadata_block_size, empty) < 0 then {
         outs("dc_disc_write: could not write initial chunk\n");
@@ -125,12 +125,16 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
-    let f;
+    let a, b, c;
+    let d, e = vec 4;
+    a := strcmp("howdy", "ho");
+    b := strcmp("wha", "t's up");
+    c := strcmp("cat", "hat");
 
-    if setup_fs() = -1 then return;
-    f := open("readme.txt", 'w', 10);
-    if f = nil then {
-        outs("could not open file\n");
-        return; }
+    out("%d %d %d\n", a, b, c);
+
+    d := table 0, 1, 2, 3;
+    memcpy(e, d, 4);
+    out("%d %d %d %d\n", e ! 0, e ! 1, e ! 2, e ! 3);
 
     return }
