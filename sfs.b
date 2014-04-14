@@ -9,7 +9,10 @@ manifest {
 }
 
 manifest {
-    offset_size = 0
+    offset_size = 0,
+    offsed_used_size = 1,
+    offset_file_name = 2,
+    max_file_name_chars = 32
 }
 
 static {
@@ -20,26 +23,39 @@ static {
 }
 
 // TODO
-// let findfree(start, size) be {
-//     resultis nil }
-
-// TODO
 // find empty space of size, make sure space on disc (split if have to)
 // setup header fields
 // return address
 let open_w(fn, size) be {
     resultis nil }
 
-// TODO
-// traverse until find file or a size of -1
-// return address if found or -1
+let strcmp(a, b) be {
+    for i = 0 to max_file_name_chars do {
+        let ac = byte i of a;
+        let bc = byte i of b;
+
+        if ac /= bc then resultis -1;
+        if ac = 0 /\ bc = 0 then resultis 0;
+    }
+
+    resultis 1 }
+
 let open_r(fn) be {
     let buf = vec words_per_block;
-    let file_start_word = 0;
+    let file_start = 0;
+    let size = 0;
+    let name;
 
-    while file_start_word <= max_size do {
-        devctl(DC_DISC_READ, disc_number, 0, metadata_block_size, buf);
+    while file_start <= max_size do {
+        devctl(DC_DISC_READ, disc_number, file_start, metadata_block_size, buf);
 
+        size = buf ! offset_size;
+        if size = -1 then resultis nil;
+
+        name := buf ! offset_file_name;
+        if strcmp(name, fn) = 0 then resultis buf;
+
+        file_start +:= size;
     }
 
     resultis nil }
