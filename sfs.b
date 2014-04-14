@@ -6,15 +6,17 @@ manifest {
     bytes_per_word = 4,
     file_size_words = 1,
     file_name_words = 8,
+    max_file_name_chars = 32,
     metadata_block_size = 1
 }
 
+// Structure of a file header chunk.
 manifest {
     offset_size = 0,
     offset_used_size = 1,
     offset_file_name = 2,
-    max_file_name_chars = 32
-}
+    // offset_file_name + file_name_words
+    offset_data = 10 }
 
 static {
     max_block = 0,
@@ -48,8 +50,7 @@ let delete(name) be {
     let addr = open(name, 'w');
     if addr = -1 then {
         out("could not delete file %s\n", name);
-        resultis -1
-    }
+        resultis -1; }
 
     //devctl(DC_DISC)
 }
@@ -99,16 +100,14 @@ let strcmp(a, b) be {
         let ac = byte i of a;
         let bc = byte i of b;
         if ac /= bc then resultis -1;
-        if ac = 0 /\ bc = 0 then resultis 0;
-    }
+        if ac = 0 /\ bc = 0 then resultis 0; }
 
     resultis 1 }
 
 // size is given in bytes
-let memcpy(dest, src, size) be {
+let memcpy(dest, src, size) be
     for i = 0 to size do
         dest ! i := src ! i;
-    return }
 
 // Returns address of file start in memory or -1 if not found.
 // Pretty much acts like a linear find().
@@ -140,8 +139,7 @@ let setup_fs() be {
     max_block := devctl(DC_DISC_CHECK, disc_number);
     if max_block < 1 then {
         outs("dc_disc_check: got disc 1 size as 0\n");
-        resultis -1;
-    }
+        resultis -1; }
 
     // Set the initial block to be unoccupied.
     // Note: empty will not be initialized...assume contents past size field
@@ -150,8 +148,7 @@ let setup_fs() be {
     empty ! offset_used_size := -1;
     if devctl(DC_DISC_WRITE, disc_number, metadata_block_size, empty) < 0 then {
         outs("dc_disc_write: could not write initial chunk\n");
-        resultis -1;
-    }
+        resultis -1; }
 
     resultis 0 }
 
