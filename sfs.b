@@ -9,8 +9,7 @@ manifest {
     max_file_name_bytes = 256, // 32 chars
     metadata_block_size = 1,
     filesystem_root = 1, // NB: this is 1-indexed
-    max_number_blocks = 6000
-}
+    max_number_blocks = 6000 }
 
 // Structure of a file header chunk.
 manifest {
@@ -56,8 +55,7 @@ let open(fn, mode) be {
             if mode = 'w' then writefile := addr;
             if mode = 'r' then readfile := addr;
 
-            resultis addr;
-        }
+            resultis addr; }
 
         // Keep checking at next file
         addr +:= size; }
@@ -98,10 +96,10 @@ let delete(name) be {
 // // TODO--check size, get chunk
 // let read(ptr, dest, bytes) be {
 //     resultis 0 }
-//
-// // TODO
-// let write(addr, src) be {
-//     resultis 0 }
+
+// TODO
+let write(addr, src) be {
+    resultis 0 }
 
 // Helper function for create() to write file metadata
 let write_metadata(addr, fn, disc_size_blocks, used_size_words) be {
@@ -141,8 +139,7 @@ let create(fn, size) be {
             if (addr + block_size - 1) < max_number_blocks then {
                 // TODO: Check if we need to split
                 write_metadata(addr, fn, block_size, word_size);
-                resultis addr;
-            }
+                resultis addr; }
             // There is no space and we've traversed everything.
             resultis -1;
 
@@ -151,14 +148,11 @@ let create(fn, size) be {
             if disc_size <= block_size then {
                 // TODO: Check if we need to split
                 write_metadata(addr, fn, block_size, word_size);
-                resultis addr;
-            }
+                resultis addr; }
 
         // Otherwise, continue to traverse
         } else {
-            addr +:= disc_size;
-        }
-    }
+            addr +:= disc_size; } }
 
     resultis -1 }
 
