@@ -48,24 +48,22 @@ let memcpy(dest, src, size) be
 // Pretty much acts like a linear find().
 let open(fn, mode) be {
     let buf = vec words_per_block;
-    let file_start = filesystem_root;
-    let size = 0;
-    let name;
-    let read;
+    let addr = filesystem_root;
+    let size, name;
 
-    while file_start <= max_number_blocks do {
-        read := devctl(DC_DISC_READ, disc_number, file_start, metadata_block_size, buf);
-        out("read %d blocks\n", read);
-        out("%d %d %d\n", buf ! 0, buf ! 1, buf ! 2);
+    while addr <= max_number_blocks do {
+        devctl(DC_DISC_READ, disc_number, addr, metadata_block_size, buf);
+
         // Get size field
         size := buf ! offset_size;
-        out("got size as %d\n", size); // todo: remove
         if size = -1 then resultis -1;
+
         // Get name field
         name := buf ! offset_file_name;
-        if strcmp(name, fn) = 0 then resultis file_start;
+        if strcmp(name, fn) = 0 then resultis addr;
+
         // Keep checking at next file
-        file_start +:= size; }
+        addr +:= size; }
 
     resultis -1 }
 
@@ -143,15 +141,14 @@ let open(fn, mode) be {
 //
 //     resultis -1 }
 
-// Setup size constants and consistent block structure.
 let setup_fs() be {
-    let empty = vec words_per_block;
-
     // Set the initial block to be unoccupied.
     // Note: empty will not be initialized...assume contents past size field
     // will not be inspected.
+    let empty = vec words_per_block;
     empty ! offset_size      := -1;
     empty ! offset_used_size := -1;
+
     if devctl(DC_DISC_WRITE, disc_number, filesystem_root,
             metadata_block_size, empty) < 0 then {
         outs("dc_disc_write: could not write initial chunk\n");
@@ -160,5 +157,8 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
-    let x = open("README.txt", 'r');
+    let x;
+
+    setup_fs();
+    x := open("README.txt", 'r');
     return }
