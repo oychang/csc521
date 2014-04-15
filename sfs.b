@@ -109,9 +109,9 @@ let write_metadata(addr, fn, disc_size_blocks, used_size_words) be {
     let ch;
     buf ! offset_size      := disc_size_blocks;
     buf ! offset_used_size := used_size_words;
-    buf ! offset_file_name := fn; // TODO: check if good
+    buf ! offset_file_name := fn; // TODO: test
 
-    out("creating at addr %d with sizes %d, %d\n", addr, disc_size_blocks, used_size_words);
+    out("creating at addr %d with sizes blocks %d, words %d\n", addr, disc_size_blocks, used_size_words);
     devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
     return }
 
@@ -136,22 +136,30 @@ let create(fn, size) be {
         disc_size := buf ! offset_size;
         used_size := buf ! offset_used_size;
 
+        out("words needed: %d blocks needed: %d\nblock's disc: %d block's used: %d\n",
+            word_size, block_size, disc_size, used_size);
+
         // If we're at end of used space, check if there's enough space
         test used_size = -1 then {
             if (addr + block_size - 1) < max_number_blocks then {
-                // TODO: Check if we need to split
+                // Split if necessary
+                if (max_number_blocks - addr - block_size + 1) > 0 then
+                    write_metadata(addr + block_size, "EMPTY",
+                        max_number_blocks - addr - block_size + 1, -1);
                 write_metadata(addr, fn, block_size, word_size);
                 resultis addr; }
             // There is no space and we've traversed everything.
             resultis -1;
-
         // If the used space of this is 0, check if the disc space is good
         } else test used_size = 0 then {
             if disc_size <= block_size then {
-                // TODO: Check if we need to split
+                // Split if necessary
+                // TODO: test
+                if (disc_size - block_size) > 0 then
+                    write_metadata(addr + block_size,
+                        "EMPTY", disc_size - block_size, 0);
                 write_metadata(addr, fn, block_size, word_size);
                 resultis addr; }
-
         // Otherwise, continue to traverse
         } else {
             addr +:= disc_size; } }
@@ -160,16 +168,7 @@ let create(fn, size) be {
 
 let setup_fs() be {
     // Set the initial block to be unoccupied.
-    // Note: empty will not be initialized...assume contents past size field
-    // will not be inspected.
-    let buf = vec words_per_block;
-    buf ! offset_size      := -1;
-    buf ! offset_used_size := -1;
-
-    if devctl(DC_DISC_WRITE, disc_number, filesystem_root,
-            metadata_block_size, buf) < 0 then {
-        outs("dc_disc_write: could not write initial chunk\n");
-        resultis -1; }
+    write_metadata(filesystem_root, "INITIAL", max_number_blocks, -1);
 
     resultis 0 }
 
