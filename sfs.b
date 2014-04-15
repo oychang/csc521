@@ -36,6 +36,11 @@ let strcmp(a, b) be {
         if ac = 0 /\ bc = 0 then resultis 0; }
     resultis 1 }
 
+// Size given in words
+let memcpy(dest, src, size) be
+    for i = 0 to size do
+        dest ! i := src ! i;
+
 // Returns address of file start in memory or -1 if not found.
 let find(fn) be {
     let buf = vec words_per_block;
@@ -60,8 +65,22 @@ let find(fn) be {
 let open(fn, mode) be {
     let addr = find(fn);
     if addr = -1 then resultis -1;
-    if mode = 'w' then writefile := addr;
-    if mode = 'r' then readfile := addr;
+
+    if mode = 'w' then  {
+        if writefile /= 0 then {
+            out("file already open\n");
+            resultis -1; }
+        writefile := addr;
+        writeptr := 0;
+    }
+    if mode = 'r' then  {
+        if readfile /= then {
+            out("file already open\n");
+            resultis -1; }
+        readfile := addr;
+        readptr := 0;
+    }
+
     resultis addr }
 
 // Because of the way we handle file descriptors (i.e. we don't) this doesn't
@@ -101,6 +120,7 @@ let delete(name) be {
 
 // TODO
 let write(addr, src) be {
+    out("%d %d %d\n", src ! 0, src ! 1, src ! 2);
     resultis 0 }
 
 // Helper function for create() to write file metadata
@@ -173,11 +193,30 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
-    let x, y;
+    let data = table 3, 1, 4, 1;
+    let result = vec 4;
+    let f;
     setup_fs();
 
-    x := create("README.txt", 10);
-    delete("README.txt");
-    y := create("FILE2.txt", 64);
-    out("got addrs as %d, %d\n", x, y);
+    create("README.txt", 32);
+
+    f := open("README.txt", 'w');
+    if f = -1 {
+        outs("could not open\n");
+        return;
+    }
+
+    write(f, data, 3);
+    close(f);
+
+    f := open("README.txt", 'r');
+    if f = -1 {
+        outs("could not open\n");
+        return;
+    }
+    read(f, result, 3);
+    close(f);
+
+    out("3 1 4 1 =? %d %d %d\n", result ! 0, result ! 1, result ! 2, result ! 3);
+
     return }
