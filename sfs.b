@@ -6,7 +6,7 @@ manifest {
     bytes_per_word = 4,
     file_size_words = 1,
     file_name_words = 8,
-    max_file_name_chars = 32,
+    max_file_name_bytes = 256, // 32 chars
     metadata_block_size = 1,
     filesystem_root = 1, // NB: this is 1-indexed
     max_number_blocks = 6000
@@ -17,6 +17,7 @@ manifest {
     offset_size = 0,
     offset_used_size = 1,
     offset_file_name = 2,
+    offset_fn_bytes = 8,
     // offset_file_name + file_name_words
     offset_data = 10 }
 
@@ -24,24 +25,18 @@ static {
     writefile = 0,
     readfile = 0,
     writeptr = 0,
-    readptr = 0
-}
+    readptr = 0 }
 
 
 // Compare null-terminated strings a and b
 // Returns 0 if equal, +/-1 if not
 let strcmp(a, b) be {
-    for i = 0 to max_file_name_chars do {
+    for i = 0 to max_file_name_bytes do {
         let ac = byte i of a;
         let bc = byte i of b;
         if ac /= bc then resultis -1;
         if ac = 0 /\ bc = 0 then resultis 0; }
     resultis 1 }
-
-// size is given in bytes
-let memcpy(dest, src, size) be
-    for i = 0 to size do
-        dest ! i := src ! i;
 
 // Returns address of file start in memory or -1 if not found.
 // Pretty much acts like a linear find().
@@ -81,22 +76,23 @@ let close(addr) be {
     out("close: invalid file...hasn't been opened yet\n");
     resultis -1 }
 
+// TODO: implement
 // First call on open to find the start address, then set size fields
-// let delete(name) be {
-//     let buf = vec words_per_block;
-//
-//     // Get the starting address of the file
-//     let addr = open(name, 'w');
-//     if addr = -1 then {
-//         out("could not find file %s\n", name);
-//         resultis -1; }
-//
-//     // Get metadata. Store used size as 0 leaving rest untouched.
-//     devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
-//     buf ! offset_used_size := 0;
-//     devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
-//     resultis 0 }
-//
+let delete(name) be {
+    let buf = vec words_per_block;
+
+    // Get the starting address of the file
+    let addr = open(name, 'w');
+    if addr = -1 then {
+        out("could not find file %s\n", name);
+        resultis -1; }
+
+    // Set metadata. Store used size as 0 leaving rest untouched.
+    buf ! offset_used_size := 0;
+    devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
+
+    resultis 0 }
+
 // // TODO--check size, get chunk
 // let read(ptr, dest, bytes) be {
 //     resultis 0 }
@@ -104,6 +100,22 @@ let close(addr) be {
 // // TODO
 // let write(addr, src) be {
 //     resultis 0 }
+
+// Helper function for create() to write file metadata
+let write_metadata(addr, fn, disc_size_blocks, used_size_words) be {
+    let buf = vec words_per_block;
+    let ch;
+    buf ! offset_size      := disc_size_blocks;
+    buf ! offset_used_size := used_size_words;
+
+    for i = 0 to max_file_name_bytes do {
+        ch := byte i of fn;
+        byte (i + offset_fn_bytes) of buf := ch;
+        if ch = 0 then break; }
+    //out("fn is %s\n", buf ! offset_file_name);
+
+    devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
+    return }
 
 // Traverse the file system for an available empty spot.
 // If empty spot has over one excess chunk than we need than we split it.
@@ -130,9 +142,7 @@ let create(fn, size) be {
         test used_size = -1 then {
             if (addr + block_size - 1) < max_number_blocks then {
                 // TODO: Check if we need to split
-
-                addr ! offset_size := block_size;
-                addr ! offset_used_size := word_size;
+                write_metadata(addr, fn, disc_size, used_size);
                 resultis addr;
             }
             // There is no space and we've traversed everything.
@@ -142,9 +152,7 @@ let create(fn, size) be {
         } else test used_size = 0 then {
             if disc_size <= block_size then {
                 // TODO: Check if we need to split
-
-                addr ! offset_size := block_size;
-                addr ! offset_used_size := word_size;
+                write_metadata(addr, fn, disc_size, used_size);
                 resultis addr;
             }
 
@@ -172,8 +180,10 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
-    let x;
+    let x, y;
     setup_fs();
 
     x := create("README.txt", 10);
+    y := create("FILE2.txt", 64);
+    out("got addrs as %d, %d\n", x, y);
     return }
