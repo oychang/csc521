@@ -17,7 +17,6 @@ manifest {
     offset_size = 0,
     offset_used_size = 1,
     offset_file_name = 2,
-    offset_fn_bytes = 8,
     // offset_file_name + file_name_words
     offset_data = 10 }
 
@@ -47,13 +46,12 @@ let open(fn, mode) be {
 
     while addr <= max_number_blocks do {
         devctl(DC_DISC_READ, disc_number, addr, metadata_block_size, buf);
-
-        // Get size field
         size := buf ! offset_size;
-        if size = -1 then resultis -1;
-
-        // Get name field
         name := buf ! offset_file_name;
+
+        out("looking at %d, with size %d, name %s\n", addr, size, name);
+
+        if size = -1 then resultis -1;
         if strcmp(name, fn) = 0 then resultis addr;
 
         // Keep checking at next file
@@ -107,13 +105,9 @@ let write_metadata(addr, fn, disc_size_blocks, used_size_words) be {
     let ch;
     buf ! offset_size      := disc_size_blocks;
     buf ! offset_used_size := used_size_words;
+    buf ! offset_file_name := fn; // TODO: check if good
 
-    for i = 0 to max_file_name_bytes do {
-        ch := byte i of fn;
-        byte (i + offset_fn_bytes) of buf := ch;
-        if ch = 0 then break; }
-    //out("fn is %s\n", buf ! offset_file_name);
-
+    out("creating at addr %d with sizes %d, %d\n", addr, disc_size_blocks, used_size_words);
     devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
     return }
 
@@ -142,7 +136,7 @@ let create(fn, size) be {
         test used_size = -1 then {
             if (addr + block_size - 1) < max_number_blocks then {
                 // TODO: Check if we need to split
-                write_metadata(addr, fn, disc_size, used_size);
+                write_metadata(addr, fn, block_size, word_size);
                 resultis addr;
             }
             // There is no space and we've traversed everything.
@@ -152,7 +146,7 @@ let create(fn, size) be {
         } else test used_size = 0 then {
             if disc_size <= block_size then {
                 // TODO: Check if we need to split
-                write_metadata(addr, fn, disc_size, used_size);
+                write_metadata(addr, fn, block_size, word_size);
                 resultis addr;
             }
 
@@ -184,6 +178,7 @@ let start() be {
     setup_fs();
 
     x := create("README.txt", 10);
-    y := create("FILE2.txt", 64);
+    y := open("README.txt");
+    //y := create("FILE2.txt", 64);
     out("got addrs as %d, %d\n", x, y);
     return }
