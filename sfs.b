@@ -36,11 +36,6 @@ let strcmp(a, b) be {
         if ac = 0 /\ bc = 0 then resultis 0; }
     resultis 1 }
 
-// Size given in words
-let memcpy(dest, src, size) be
-    for i = 0 to size do
-        dest ! i := src ! i;
-
 // Returns address of file start in memory or -1 if not found.
 let find(fn) be {
     let buf = vec words_per_block;
@@ -114,13 +109,26 @@ let delete(name) be {
 
     resultis 0 }
 
-// // TODO--check size, get chunk
-// let read(ptr, dest, bytes) be {
-//     resultis 0 }
+// TODO
+let read(addr, dest, words) be {
+    if addr /= readfile then {
+        outs("cannot read...this file has not been opened\n");
+        resultis -1; }
+
+    devctl(DC_DISC_READ, disc_number, FIRSTBLOCKNUM, NUMBLOCKS, dest);
+    readptr +:= words;
+
+    resultis 0 }
 
 // TODO
-let write(addr, src) be {
-    out("%d %d %d\n", src ! 0, src ! 1, src ! 2);
+let write(addr, src, words) be {
+    if addr /= writefile then {
+        outs("cannot write...this file has not been opened\n");
+        resultis -1; }
+
+    devctl(DC_DISC_WRITE, disc_number, FIRSTBLOCKN, NUMBLOCKS, src);
+    writeptr +:= words;
+
     resultis 0 }
 
 // Helper function for create() to write file metadata
@@ -206,7 +214,7 @@ let start() be {
         return;
     }
 
-    write(f, data, 3);
+    write(f, data, 4);
     close(f);
 
     f := open("README.txt", 'r');
@@ -214,7 +222,7 @@ let start() be {
         outs("could not open\n");
         return;
     }
-    read(f, result, 3);
+    read(f, result, 4);
     close(f);
 
     out("3 1 4 1 =? %d %d %d\n", result ! 0, result ! 1, result ! 2, result ! 3);
