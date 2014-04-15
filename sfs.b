@@ -37,8 +37,7 @@ let strcmp(a, b) be {
     resultis 1 }
 
 // Returns address of file start in memory or -1 if not found.
-// Pretty much acts like a linear find().
-let open(fn, mode) be {
+let find(fn) be {
     let buf = vec words_per_block;
     let addr = filesystem_root;
     let size, name;
@@ -51,16 +50,19 @@ let open(fn, mode) be {
         out("looking at %d, with size %d, name %s\n", addr, size, name);
 
         if size = -1 then resultis -1;
-        if strcmp(name, fn) = 0 then {
-            if mode = 'w' then writefile := addr;
-            if mode = 'r' then readfile := addr;
-
-            resultis addr; }
+        if strcmp(name, fn) = 0 then resultis addr;
 
         // Keep checking at next file
         addr +:= size; }
 
     resultis -1 }
+
+let open(fn, mode) be {
+    let addr = find(fn);
+    if addr = -1 then resultis -1;
+    if mode = 'w' then writefile := addr;
+    if mode = 'r' then readfile := addr;
+    resultis addr }
 
 // Because of the way we handle file descriptors (i.e. we don't) this doesn't
 // need to do anything besides reset the pointers.
@@ -82,7 +84,7 @@ let delete(name) be {
     let buf = vec words_per_block;
 
     // Get the starting address of the file
-    let addr = open(name);
+    let addr = find(name);
     if addr = -1 then {
         out("could not find file %s\n", name);
         resultis -1; }
