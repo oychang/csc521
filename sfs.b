@@ -53,11 +53,8 @@ let open(fn, mode) be {
 
         if size = -1 then resultis -1;
         if strcmp(name, fn) = 0 then {
-            test mode = 'w' then  {
-                writefile := addr;
-            } else {
-                readfile := addr;
-            }
+            if mode = 'w' then writefile := addr;
+            if mode = 'r' then readfile := addr;
 
             resultis addr;
         }
@@ -82,13 +79,12 @@ let close(addr) be {
     out("close: invalid file...hasn't been opened yet\n");
     resultis -1 }
 
-// TODO: implement
 // First call on open to find the start address, then set size fields
 let delete(name) be {
     let buf = vec words_per_block;
 
     // Get the starting address of the file
-    let addr = open(name, 'w');
+    let addr = open(name);
     if addr = -1 then {
         out("could not find file %s\n", name);
         resultis -1; }
@@ -186,8 +182,7 @@ let start() be {
     setup_fs();
 
     x := create("README.txt", 10);
-    y := open("README.txt");
-    close(y);
-    //y := create("FILE2.txt", 64);
+    delete("README.txt");
+    y := create("FILE2.txt", 64);
     out("got addrs as %d, %d\n", x, y);
     return }
