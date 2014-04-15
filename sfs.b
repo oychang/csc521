@@ -122,15 +122,16 @@ let create(fn, size) be {
     block_size := (((word_size - 1) / words_per_block) + 1);
 
     while addr <= max_number_blocks do {
+        devctl(DC_DISC_READ, disc_number, addr, metadata_block_size, buf);
         disc_size := buf ! offset_size;
         used_size := buf ! offset_used_size;
 
         // If we're at end of used space, check if there's enough space
         test used_size = -1 then {
-            if (addr + size - 1) < max_number_blocks then {
+            if (addr + block_size - 1) < max_number_blocks then {
                 // TODO: Check if we need to split
 
-                addr ! offset_size := word_size;
+                addr ! offset_size := block_size;
                 addr ! offset_used_size := word_size;
                 resultis addr;
             }
@@ -139,10 +140,10 @@ let create(fn, size) be {
 
         // If the used space of this is 0, check if the disc space is good
         } else test used_size = 0 then {
-            if disc_size <= size then {
+            if disc_size <= block_size then {
                 // TODO: Check if we need to split
 
-                addr ! offset_size := word_size;
+                addr ! offset_size := block_size;
                 addr ! offset_used_size := word_size;
                 resultis addr;
             }
