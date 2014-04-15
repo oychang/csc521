@@ -32,9 +32,8 @@ let strcmp(a, b) be {
     for i = 0 to max_file_name_bytes do {
         let ac = byte i of a;
         let bc = byte i of b;
-        if ac /= bc then {
-            out("char %c != char %c\n", ac, bc);
-            resultis -1; }
+        if ac /= bc then
+            resultis -1;
         if ac = 0 /\ bc = 0 then resultis 0; }
     resultis 1 }
 
@@ -49,17 +48,12 @@ let find(fn) be {
         size := buf ! offset_used_size;
         name := buf ! offset_file_name;
 
-        out("looking at %d, with size %d, name %s\n", addr, size, name);
-
         if size = -1 then {
-            out("size is bad\n");
             resultis -1;}
         if strcmp(name, fn) = 0 then {
-            out("name is good\n");
             resultis addr; }
 
         // Keep checking at next file
-        out("disc size is %d\n", buf ! offset_size);
         addr +:= buf ! offset_size; }
 
     resultis -1 }
@@ -114,17 +108,36 @@ let delete(name) be {
 
     resultis 0 }
 
-// TODO
+// Note that read() is essentially the less complicated version of write()
+// in this implementation.
 let read(addr, dest, words) be {
+    let buf = vec words_per_block;
+    let words_remaining = words;
+    let active_block, words_to_read, block_offset;
+
     if addr /= readfile then {
         outs("cannot read...this file has not been opened\n");
         resultis -1; }
 
-    //devctl(DC_DISC_READ, disc_number, FIRSTBLOCKNUM, NUMBLOCKS, dest);
-    readptr +:= words;
+    while words_remaining > 0 do {
+        // Find out which block we're in and how much we can write in it
+        active_block := (readptr - 1) / words_per_block;
+        block_offset := readptr rem words_per_block;
+        words_to_read := words_per_block - block_offset;
+
+        // Read in chunk
+        devctl(DC_DISC_READ, disc_number, addr + active_block, 1, buf);
+
+        // Put in our allowed number of words
+        for i = 0 to words_to_read do
+            dest ! (i + block_offset) := buf ! i;
+
+        readptr +:= words_to_read;
+        words_remaining -:= words_to_read; }
 
     resultis 0 }
 
+// TODO: check words does not overflow file's size
 let write(addr, src, words) be {
     let buf = vec words_per_block;
     let words_remaining = words;
@@ -149,6 +162,8 @@ let write(addr, src, words) be {
 
         // Write back chunk
         devctl(DC_DISC_WRITE, disc_number, addr + active_block, 1, buf);
+
+        writeptr +:= words_to_write;
         words_remaining -:= words_to_write; }
 
     resultis 0 }
@@ -161,7 +176,6 @@ let write_metadata(addr, fn, disc_size_blocks, used_size_words) be {
     buf ! offset_used_size := used_size_words;
     buf ! offset_file_name := fn; // TODO: test
 
-    out("creating at addr %d with sizes blocks %d, words %d\n", addr, disc_size_blocks, used_size_words);
     devctl(DC_DISC_WRITE, disc_number, addr, metadata_block_size, buf);
     return }
 
@@ -238,8 +252,6 @@ let start() be {
 
     write(f, data, 4);
     close(f);
-
-    out("created, opened, wrote, closed\n");
 
     f := open("README.txt", 'r');
     if f = -1 then {
