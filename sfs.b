@@ -52,7 +52,15 @@ let open(fn, mode) be {
         out("looking at %d, with size %d, name %s\n", addr, size, name);
 
         if size = -1 then resultis -1;
-        if strcmp(name, fn) = 0 then resultis addr;
+        if strcmp(name, fn) = 0 then {
+            test mode = 'w' then  {
+                writefile := addr;
+            } else {
+                readfile := addr;
+            }
+
+            resultis addr;
+        }
 
         // Keep checking at next file
         addr +:= size; }
@@ -179,6 +187,7 @@ let start() be {
 
     x := create("README.txt", 10);
     y := open("README.txt");
+    close(y);
     //y := create("FILE2.txt", 64);
     out("got addrs as %d, %d\n", x, y);
     return }
