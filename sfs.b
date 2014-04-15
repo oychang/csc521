@@ -124,13 +124,16 @@ let read(addr, dest, words) be {
         active_block := (readptr - 1) / words_per_block;
         block_offset := readptr rem words_per_block;
         words_to_read := words_per_block - block_offset;
+        if words_remaining < words_to_read then
+            words_to_read := words_remaining;
 
         // Read in chunk
         devctl(DC_DISC_READ, disc_number, addr + active_block, 1, buf);
 
         // Put in our allowed number of words
-        for i = 0 to words_to_read do
-            dest ! (i + block_offset) := buf ! i;
+        for i = 0 to (words_to_read - 1) do {
+            dest ! i := buf ! (i + block_offset);
+        }
 
         readptr +:= words_to_read;
         words_remaining -:= words_to_read; }
@@ -152,13 +155,16 @@ let write(addr, src, words) be {
         active_block := (writeptr - 1) / words_per_block;
         block_offset := writeptr rem words_per_block;
         words_to_write := words_per_block - block_offset;
+        if words_remaining < words_to_write then
+            words_to_write := words_remaining;
 
         // Read in chunk
         devctl(DC_DISC_READ, disc_number, addr + active_block, 1, buf);
 
         // Put in our allowed number of words
-        for i = 0 to words_to_write do
+        for i = 0 to (words_to_write - 1) do {
             buf ! (i + block_offset) := src ! i;
+        }
 
         // Write back chunk
         devctl(DC_DISC_WRITE, disc_number, addr + active_block, 1, buf);
@@ -200,9 +206,6 @@ let create(fn, size) be {
         disc_size := buf ! offset_size;
         used_size := buf ! offset_used_size;
 
-        out("words needed: %d blocks needed: %d\nblock's disc: %d block's used: %d\n",
-            word_size, block_size, disc_size, used_size);
-
         // If we're at end of used space, check if there's enough space
         test used_size = -1 then {
             if (addr + block_size - 1) < max_number_blocks then {
@@ -237,30 +240,23 @@ let setup_fs() be {
     resultis 0 }
 
 let start() be {
+    let a, b;
     let data = table 3, 1, 4, 1;
-    let result = vec 4;
-    let f;
+    let result = table 0, 0, 0, 0;
     setup_fs();
 
     create("README.txt", 32);
 
-    f := open("README.txt", 'w');
-    if f = -1 then {
-        outs("could not open\n");
-        return;
-    }
+    a := open("README.txt", 'w');
+    write(a, data, 4);
+    close(a);
 
-    write(f, data, 4);
-    close(f);
+    // Awful syntax to avoid some segfault weirdness...
+    read(open("README.txt", 'r'), result, 4);
+    out("%d %d %d %d =? %d %d %d %d\n",
+        data ! 0, data ! 1, data ! 2, data ! 3,
+        result ! 0, result ! 1, result ! 2, result ! 3);
 
-    f := open("README.txt", 'r');
-    if f = -1 then {
-        outs("could not open\n");
-        return;
-    }
-    read(f, result, 4);
-    close(f);
-
-    out("3 1 4 1 =? %d %d %d\n", result ! 0, result ! 1, result ! 2, result ! 3);
+    delete("README.txt");
 
     return }
