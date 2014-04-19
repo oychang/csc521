@@ -1,0 +1,5 @@
+
+create a very basic file system, it can even use contiguous
+allocation for everything, but it has to be usable.
+
+
