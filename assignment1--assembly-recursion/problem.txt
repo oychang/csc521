@@ -1,0 +1,48 @@
+Assignment 1, due Thursday 30th January
+
+Implement this C program (or at least teaspoon and tryit) in assembly
+language, and make it work properly. Implement the functions properly
+using stack frames and using frame-pointer-relative addressing for
+parameters and local variables. I just ran this on rabbit and copied
+and pasted the code directly here, so I know it works.
+
+Then adapt teaspoon to make your first useful library function: one
+that prints numbers nicely in decimal.
+
+Note: I only used printf to keep things familiar. The printf in teaspoon
+only ever has to print single digit numbers, so printf("%d", R)
+is just printing the character ('0' + R). The printf in tryit only
+starts a new line, so it also only needs the TYPE instruction.
+
+#include <stdio.h>
+
+void teaspoon(int N)
+{ 
+  int Q, R;
+  Q = N / 10;
+  R = N - Q * 10;
+  if (Q > 0)
+    teaspoon(Q);
+  printf("%d", R);
+  if (Q > 0)
+    teaspoon(Q);
+}
+
+void tryit(void)
+{
+  teaspoon(1234);
+  printf("\n");
+  teaspoon(7);
+  printf("\n");
+  teaspoon(72);
+  printf("\n");
+  teaspoon(321);
+  printf("\n");
+  teaspoon(2468135); 
+  printf("\n");
+}
+
+int main()
+{ tryit();
+  return 0; }
+

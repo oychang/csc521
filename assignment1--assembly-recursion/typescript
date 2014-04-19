@@ -1,0 +1,70 @@
+Script started on Thu Jan 30 20:32:05 2014
+[1m20:32 ~/assignment1 > [mset promt[Kpt='$ '
+$ ls
+assign1.ass	maindrive.disc	reference.c	system.setup	typescript
+$ cat reference.c 
+#include <stdio.h>
+
+void teaspoon(int N)
+{
+  int Q, R;
+  Q = N / 10;
+  R = N - Q * 10;
+  if (Q > 0)
+    teaspoon(Q);
+  printf("%d", R);
+  if (Q > 0)
+    teaspoon(Q);
+}
+
+void tryit(void)
+{
+  teaspoon(1234);
+  printf("\n");
+  teaspoon(7);
+  printf("\n");
+  teaspoon(72);
+  printf("\n");
+  teaspoon(321);
+  printf("\n");
+  teaspoon(2468135);
+  printf("\n");
+}
+
+int main()
+{ tryit();
+  return 0; }
+$ gcc reference.c -o refr[Kerence
+$ ./reference > reference.out
+$ cat reference.out
+121312141213121
+7
+727
+3231323
+2426242824262421242624282426242324262428242624212426242824262425242624282426242124262428242624232426242824262421242624282426242
+$ ls
+assign1.ass	maindrive.disc	reference	reference.c	reference.out	system.setup	typescript
+$ head assign1.ass
+        .makeexe                // Assignment #1, 30 January 2014, Oliver Chang
+        jump    main
+//=============================================================================
+val1:   .data   1234            // teaspoon values
+val2:   .data   7               // easy way to push >16bit values.
+val3:   .data   72              // alternative is LOAD -> LOADH -> PUSH
+val4:   .data   321
+val5:   .data   2468135
+//=============================================================================
+teaspoon:                       // void teaspoon(int N) {
+$ assemble assign1.ass[K[K[K[K
+$ run assign1
+121312141213121
+7
+727
+3231323
+2426242824262421242624282426242324262428242624212426242824262425242624282426242124262428242624232426242824262421242624282426242
+$ run assign1 > assign1.out
+$ diff assign1.out reference.out
+$ exit
+exit
+
+Script done on Thu Jan 30 20:34:03 2014

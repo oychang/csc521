@@ -1,0 +1,125 @@
+        .makeexe                // Assignment #1, 30 January 2014, Oliver Chang
+        jump    main
+//=============================================================================
+val1:   .data   1234            // teaspoon values
+val2:   .data   7               // easy way to push >16bit values.
+val3:   .data   72              // alternative is LOAD -> LOADH -> PUSH
+val4:   .data   321
+val5:   .data   2468135
+//=============================================================================
+teaspoon:                       // void teaspoon(int N) {
+        push    FP              //      store the value of the FP and
+        load    FP, SP          //      load this function's stack
+                                //      pointer into the frame pointer.
+        sub     SP, 2           // int Q, R;
+                                //      subtract two from the stack pointer to
+                                //      allocate space for locals (Q and R).
+                                //      use N's value already on the stack.
+                                //      the stack grows downward!
+
+        load    R1, [FP+2]      // Q = N / 10;
+        div     R1, 10          //      let R1 be the register where we
+        store   R1, [FP-1]      //      manipulate Q
+
+        load    R2, R1          // R = N - Q * 10;
+        mul     R2, 10          //      let R2 be where we manipulate R
+        rsub    R2, [FP+2]      //      done as (Q * 10) [=quantity A]
+        store   R2, [FP-2]      //      and then N - [quantity A]
+
+        compz   R1              // if (Q > 0) teaspoon(Q);
+        jcond   LEQ, leq1
+        push    R1
+        call    teaspoon
+
+leq1:   load    R2, [FP-2]      // printf("%d", R);
+        add     R2, '0'         //      reload R in case R2 has changed and
+        type    R2              //      add zero to get an ASCII integer code
+
+        load    R1, [FP-1]      // if (Q > 0) teaspoon(Q);
+        compz   R1              //      this is roughly the same as above
+        jcond   LEQ, leq2       //      only we reload R1
+        push    R1
+        call    teaspoon
+
+leq2:   load    SP, FP          // }
+        pop     FP              //      we have to resize the stack to
+        ret                     //      "get rid of" our local variables
+//=============================================================================
+tryit:                          // void tryit(void) {
+        push    [val1]          // teaspoon(1234);
+        call    teaspoon        //      manually resize the stack to free up
+        add     SP, 1           //      space taken by parameter
+        type    '\n'            // printf("\n");
+
+        push    [val2]          // teaspoon(7);
+        call    teaspoon
+        add     SP, 1
+        type    '\n'            // printf("\n");
+
+        push    [val3]          // teaspoon(72);
+        call    teaspoon
+        add     SP, 1
+        type    '\n'            // printf("\n");
+
+        push    [val4]          // teaspoon(321);
+        call    teaspoon
+        add     SP, 1
+        type    '\n'            // printf("\n");
+
+        push    [val5]          // teaspoon(2468135);
+        call    teaspoon        //      the operand field is composed of 16bits
+        add     SP, 1           //      with a range of -32768 to +32767,
+                                //      so pushing it as a literal won't work
+        type    '\n'            // printf("\n");
+
+        ret                     // }
+//=============================================================================
+main:                           // int main() {
+        call    tryit           // tryit();
+
+//-----------------------------------------------------------------------------
+                                //      optional segment: printing decimal
+                                //      integers >9. almost line-for-line
+                                //      identical to teaspoon except we drop
+                                //      the second if-statement entirely
+                                //      and our labels change here.
+print:                          // void print(int N) {
+        push    FP
+        load    FP, SP
+        sub     SP, 2           // int Q, R;
+
+        load    R1, [FP+2]      // Q = N / 10;
+        jpos    R1, is_pos      // if (N < 0) {
+        type    '-'             // putchar('-');
+        mul     r1, -1          // N *= -1; }
+        store   r1, [FP+2]
+is_pos:
+        div     R1, 10
+        store   R1, [FP-1]
+
+        load    R2, R1          // R = N - Q * 10;
+        mul     R2, 10
+        rsub    R2, [FP+2]
+        store   R2, [FP-2]
+
+        compz   R1              // if (Q > 0) print(Q);
+        jcond   LEQ, leq3
+        push    R1
+        call    print
+
+leq3:   load    R2, [FP-2]      // printf("%d", R);
+        add     R2, '0'
+        type    R2
+
+        load    SP, FP          // }
+        pop     FP
+        ret
+testprint:
+        push    -1              //      again do a push, call, newline, add
+        call    print           //      cycle for every number considered
+        type    '\n'
+        add     SP, 1
+//-----------------------------------------------------------------------------
+
+        halt                    // return 0; }
+
