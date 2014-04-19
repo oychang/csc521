@@ -1,0 +1,204 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>html { font-size: 100%; overflow-y: scroll; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+
+body{
+  color:#444;
+  font-family:Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman',
+              "Hiragino Sans GB", "STXihei", "微软雅黑", serif;
+  font-size:12px;
+  line-height:1.5em;
+  background:#fefefe;
+  width: 45em;
+  margin: 10px auto;
+  padding: 1em;
+  outline: 1300px solid #FAFAFA;
+}
+
+a{ color: #0645ad; text-decoration:none;}
+a:visited{ color: #0b0080; }
+a:hover{ color: #06e; }
+a:active{ color:#faa700; }
+a:focus{ outline: thin dotted; }
+a:hover, a:active{ outline: 0; }
+
+span.backtick {
+  border:1px solid #EAEAEA;
+  border-radius:3px;
+  background:#F8F8F8;
+  padding:0 3px 0 3px;
+}
+
+::-moz-selection{background:rgba(255,255,0,0.3);color:#000}
+::selection{background:rgba(255,255,0,0.3);color:#000}
+
+a::-moz-selection{background:rgba(255,255,0,0.3);color:#0645ad}
+a::selection{background:rgba(255,255,0,0.3);color:#0645ad}
+
+p{
+margin:1em 0;
+}
+
+img{
+max-width:100%;
+}
+
+h1,h2,h3,h4,h5,h6{
+font-weight:normal;
+color:#111;
+line-height:1em;
+}
+h4,h5,h6{ font-weight: bold; }
+h1{ font-size:2.5em; }
+h2{ font-size:2em; border-bottom:1px solid silver; padding-bottom: 5px; }
+h3{ font-size:1.5em; }
+h4{ font-size:1.2em; }
+h5{ font-size:1em; }
+h6{ font-size:0.9em; }
+
+blockquote{
+color:#666666;
+margin:0;
+padding-left: 3em;
+border-left: 0.5em #EEE solid;
+}
+hr { display: block; height: 2px; border: 0; border-top: 1px solid #aaa;border-bottom: 1px solid #eee; margin: 1em 0; padding: 0; }
+
+
+pre , code, kbd, samp { 
+  color: #000; 
+  font-family: monospace; 
+  font-size: 0.88em; 
+  border-radius:3px;
+  background-color: #F8F8F8;
+  border: 1px solid #CCC; 
+}
+pre { white-space: pre; white-space: pre-wrap; word-wrap: break-word; padding: 5px 12px;}
+pre code { border: 0px !important; padding: 0;}
+code { padding: 0 3px 0 3px; }
+
+b, strong { font-weight: bold; }
+
+dfn { font-style: italic; }
+
+ins { background: #ff9; color: #000; text-decoration: none; }
+
+mark { background: #ff0; color: #000; font-style: italic; font-weight: bold; }
+
+sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+sup { top: -0.5em; }
+sub { bottom: -0.25em; }
+
+ul, ol { margin: 1em 0; padding: 0 0 0 2em; }
+li p:last-child { margin:0 }
+dd { margin: 0 0 0 2em; }
+
+img { border: 0; -ms-interpolation-mode: bicubic; vertical-align: middle; }
+
+table { border-collapse: collapse; border-spacing: 0; }
+td { vertical-align: top; }
+
+@media only screen and (min-width: 480px) {
+body{font-size:14px;}
+}
+
+@media only screen and (min-width: 768px) {
+body{font-size:16px;}
+}
+
+@media print {
+  * { background: transparent !important; color: black !important; filter:none !important; -ms-filter: none !important; }
+  body{font-size:12pt; max-width:100%; outline:none;}
+  a, a:visited { text-decoration: underline; }
+  hr { height: 1px; border:0; border-bottom:1px solid black; }
+  a[href]:after { content: " (" attr(href) ")"; }
+  abbr[title]:after { content: " (" attr(title) ")"; }
+  .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after { content: ""; }
+  pre, blockquote { border: 1px solid #999; padding-right: 1em; page-break-inside: avoid; }
+  tr, img { page-break-inside: avoid; }
+  img { max-width: 100% !important; }
+  @page :left { margin: 15mm 20mm 15mm 10mm; }
+  @page :right { margin: 15mm 10mm 15mm 20mm; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3 { page-break-after: avoid; }
+}
+</style><title>sketch</title></head><body><h1 id="assignment-5-a-design-for-a-full-file-system">Assignment 5: A Design for a Full File System</h1>
+<h1 id="overview">Overview</h1>
+<p>The file system described borrows heavily from the design of the Unix File System (UFS).
+It has been pared down to use simpler data structures, e.g. bitmaps versus linked lists in consideration of a BCPL implementation and existence within an emulator.
+<!-- For instance, like UFS we'll create a Multilevel Indexed File System with inodes.
+But we'll stick to just single indirect blocks rather than double and triple since those are inductively easy to add-on in the future. --></p>
+<p>There are three main types of items on the disk, each grouped together and listed in ascending address on disk:</p>
+<pre><code>------------------------------
+| Superblock | inodes | Data |
+------------------------------
+</code></pre>
+<p>We'll ignore the boot block and all of those out-of-scope details for this assignment.
+Because of the small size of the disk, we'll omit indirect data chunks since the larger sizes they offer aren't possible to be taken advantage of with such a limited number of data chunks.
+We'll start with a bottom-up design approach since many details are dependent on how many of a certain type of disk item/what size they are.</p>
+<h2 id="data-chunks">Data Chunks</h2>
+<p><em>Normal data chunk</em>: just 0.5K data, nonsense without inode details.
+Data chunks are <code>0.5K = 512 bytes = 128 words</code> in size/alignment.</p>
+<pre><code>-------------------------------------------
+| Chunk n-1   | Chunk n     | Chunk n+1   |
+| 128 words   | 128 words   | 128 words   |
+-------------------------------------------
+</code></pre>
+<!-- *Indirect data chunk*: 128 1-word pointers to normal chunks (128K of addtl. data chunks)
+
+    -----------------------------------------------------
+    | Chunk n                                            |
+    |      p1                p2         ...     p128     |
+    ------------------------------------------------------
+           |                 |                    |
+           v                 v                    v
+    ------------------------------------------------------
+    | Chunk x     |     | Chunk y     |     | Chunk z    |
+    | 128 words   | ... | 128 words   | ... | 128 words  |
+    ------------------------------------------------------
+
+
+Indirect data chunks need to reference data chunks somehow, which means that we'll have a predetermined indexing of data chunks determined at file system creation time.
+We'll keep track of which chunks are occupied with a bitmap stored in the Superblock.
+ -->
+
+<h2 id="inodes">inodes</h2>
+<pre><code>----------------------------------------------
+| Permissions / File Size | 10 * Chunk Ptrs. |
+| (1 word)                | (10 words)       |
+----------------------------------------------
+</code></pre>
+<!-- ---------------------------
+ 1 * Indirect Chunk Ptrs. |
+ (1 words)                |
+--------------------------- -->
+
+<p>The star of the show, inodes, are also indexed and marked as free by a bitmap in the Superblock.
+At their most basic, they are indexed (which gives an inode number) and have a mapping of a fixed number of data chunks.
+They can also contain {created, modified, accessed} times, permissions, file sizes, and other protection metadata.
+We'll use a system that gives us three fields comprised of 6 bits for permissions (r/w/x for user/others), 32 - 6 = 26 bits for size, and a 10/1 split of direct data chunks and singly indirect data chunks.
+Thus, we use 1 + 10 = 11 words of disk space for each inode.</p>
+<p>This inode design <strong>does not allow for large files</strong>.
+In fact, if we assume that each inode represents one file, the maximum file size is 5K, which is small peanuts in reality, but with the emulated system we have, this maximum file size is acceptable-ish.</p>
+<h2 id="superblock">Superblock</h2>
+<p>We'll use the term Superblock to refer to any elements of metadata about the disk that we keep at the front of the allocated space.
+Thus, out Superblock will at least contain two bitmaps for data chunks and inode chunks.
+In addition, we'll hold onto the used space, i.e. the number of free data chunks.</p>
+<p>So now, we have a problem of how much space to use for our bitmaps while maximizing the number of usable data chunks.
+Let's say we want to support up to 128 files.
+Then we'll need 128 bits = 4 words of space for the inode bitmap.
+1 word will be used to hold the number of free chunks.
+Those 128 inodes will occupy 1408 words of space.</p>
+<p>So, there are 6000 - (4 + 1 + 1408) = 4587 words left for the data chunks and data bitmap.
+We'll use 4448 words for data.
+Then, we'll have 139 words for the chunk bitmap.
+We'll assume the bitmap is stored and searched on linearly for space efficiency.</p>
+<h2 id="all-together">All Together</h2>
+<p>We can store up to 128 files, with a max file size of 5K and a maximum data volume of (4448 words * 32 bits/word) / 8192 bits/K = 17.4 K.</p>
+<pre><code>Free Chunks (1) + inode Bitmap (4) + Data Bitmap (139) + inodes (1408) + Data Chunks (4448) = 6000 words
+</code></pre>
+<p>Thus, we assume that files do not get close to the max size.</p>
+<h1 id="directory-layout">Directory Layout</h1>
+<p>So far, it's only been a mostly platform-agnostic overview of how we look at storage.
+However, to be of any use, we need a way to access files.
+We'll again use the Unix approach of hierarchical directory/files.
+We'll store information about this structure as regular data, accessible and maintained by the operating system.
+Each file will have its path stored as a two-tuple of (human readable name, inode index) in this directory file which will use 16 words per filename, which implies file paths cannot be longer than 16 * 4 = 64 characters (we'll have null-termination if enough space, otherwise we will use all space).</p></body></html>
