@@ -1,0 +1,20 @@
+
+In a BCPL program,
+
+   Define a linked list in a nice clean tidy way.
+
+   Create a linked list containing numbers typed by the user, the
+   user will enter -1 to signal the end of the input.
+
+   Print the contents of the linked list in order.
+
+   Reverse the linked list.
+
+   Print the contents of the linked list in its new order.
+
+Then
+
+   Think about how you would implement newvec and freevec so
+   that they really work, but only for this example program.
+
+
