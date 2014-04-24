@@ -1,14 +1,53 @@
 import "io"
 import "conversion"
+import "fsutils"
 
+manifest
+{   DISC_UNIT = 1,
+    // sb = superblock
+    SB_BLOCK_NUM = 1
+    SB_MAGICNUM_OFFSET = 0,
+    SB_MAGICNUM = 0x3434,
+    SB_FS_DISCSIZE_OFFSET = 1 }
 
 let get_physical_disc_size(unit_number) be
-	resultis devctl(DC_DISC_CHECK, unit_number)
+    resultis devctl(DC_DISC_CHECK, unit_number)
+
+let read_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
+let write_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);
+
+let init_fs_unsafe(disc_unit) be
+{   let writeret, sizeret;
+    let buf = vec(WORDS_PER_BLOCK);
+    buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM;
+
+    sizeret := get_physical_disc_size(disc_unit);
+    if sizeret < 0 then
+    {   outs("init_fs_unsafe: could not get disc size\n");
+        resultis sizeret }
+    buf ! SB_FS_DISCSIZE_OFFSET = sizeret;
+
+    // TODO
+
+    writeret := write_block(disc_unit, SB_BLOCK_NUM, buf);
+    if writeret < 0 then {
+        outs("init_fs_unsafe: could not write superblock");
+        resultis writeret }
+    resultis 0 }
+let init_fs(disc_unit) be
+{   let buf = vec(WORDS_PER_BLOCK);
+    // Check if filesystem already exists
+    read_block(disc_unit, SB_BLOCK_NUM, buf);
+    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM_VALUE then
+    {   out("found preexisting file system on disc unit %d...\n", disc_unit);
+        return; }
+
+    // Otherwise, create superblock and root directory
+    resultis init_fs_unsafe(disc_unit) }
 
 
-let start() be {
-	out("%d\n", get_physical_disc_size(1));
-	return }
-
-
-
+let start() be
+{   init_fs(disc_unit);
+    return }
