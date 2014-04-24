@@ -3,7 +3,6 @@ import "io"
 export { log, perror }
 manifest {  LOG_DEBUG = true }
 
-// Copy-and-pasted out with extra conditional at top
 let log(format) be {
   if format = nil \/ LOG_DEBUG = false then return;
   out(format);
@@ -29,5 +28,6 @@ let perror(code) be {
     default:
         out("unknown error code\n");
     }
+
     return
 }

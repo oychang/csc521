@@ -27,40 +27,46 @@ let read_block(disc_unit, block, buf) be
 let write_block(disc_unit, block, buf) be
     resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);
 
-// Initializes the fs without checking for previously existant fs
+// Initializes the fs without checking for previously existing fs
 let init_fs_unsafe(disc_unit) be {
     let writeret, sizeret;
     let buf = vec(WORDS_PER_BLOCK);
-    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
 
+    // (1): magic number
+    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
+    // (2) disc size
     sizeret := get_physical_disc_size(disc_unit);
     if sizeret < 0 then {
         outs("init_fs_unsafe: could not get disc size\n");
-        resultis sizeret
+        resultis false
     }
     buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
+    // (3)
 
-    // TODO
-
+    // finally write out
     writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
     if writeret < 0 then {
         outs("init_fs_unsafe: could not write superblock");
-        resultis writeret
+        resultis false
     }
-    resultis 0
+
+    resultis true
 }
+
 // Checks for fs already in existence.
 // To bypass, just delete `maindrive.disc`
-let init_fs(disc_unit) be
-{   let buf = vec(WORDS_PER_BLOCK);
+let init_fs(disc_unit) be {
+    let buf = vec(WORDS_PER_BLOCK);
     // Check if filesystem already exists
     read_block(disc_unit, SB_BLOCKNUM, buf);
-    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then
-    {   out("found preexisting file system on disc unit %d...\n", disc_unit);
-        return; }
+    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then {
+        out("found preexisting file system on disc unit %d...\n", disc_unit);
+        resultis false
+    }
 
     // Otherwise, create superblock and root directory
-    resultis init_fs_unsafe(disc_unit) }
+    resultis init_fs_unsafe(disc_unit)
+}
 
 
 let start() be {
