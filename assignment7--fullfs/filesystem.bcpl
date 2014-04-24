@@ -30,18 +30,18 @@ let write_block(disc_unit, block, buf) be
 let init_fs_unsafe(disc_unit) be {
     let writeret, sizeret;
     let buf = vec(WORDS_PER_BLOCK);
-    buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM;
+    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
 
     sizeret := get_physical_disc_size(disc_unit);
     if sizeret < 0 then {
         outs("init_fs_unsafe: could not get disc size\n");
         resultis sizeret
     }
-    buf ! SB_FS_DISCSIZE_OFFSET = sizeret;
+    buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
 
     // TODO
 
-    writeret := write_block(disc_unit, SB_BLOCK_NUM, buf);
+    writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
     if writeret < 0 then {
         outs("init_fs_unsafe: could not write superblock");
         resultis writeret
@@ -53,8 +53,8 @@ let init_fs_unsafe(disc_unit) be {
 let init_fs(disc_unit) be
 {   let buf = vec(WORDS_PER_BLOCK);
     // Check if filesystem already exists
-    read_block(disc_unit, SB_BLOCK_NUM, buf);
-    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM_VALUE then
+    read_block(disc_unit, SB_BLOCKNUM, buf);
+    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then
     {   out("found preexisting file system on disc unit %d...\n", disc_unit);
         return; }
 

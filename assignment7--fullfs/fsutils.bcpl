@@ -1,64 +1,18 @@
-export
-{   log,
-    perror }
+import "io"
 
-// XXX: If debugging, set to true, else false
-manifest {  DEBUG = true }
+export { log, perror }
+manifest {  LOG_DEBUG = true }
+
 // Copy-and-pasted out with extra conditional at top
-let log(format) be
-{ let i = 0, an = 1, na = numbargs(), arg = @format;
-  if format = nil \/ DEBUG = false then return;
-  while true do
-  { let c = byte i of format;
-    if c = 0 then break;
-    test c = '%' then
-    { let c = byte i+1 of format, av = 0, wide = 0, fill = ' ';
-      if c = 0 then
-      { outch('%');
-        break }
-      i +:= 1;
-      if c = '0' then
-      { fill := '0';
-        i +:= 1;
-        c := byte i of format; }
-      while c >= '0' /\ c <= '9' do
-      { wide := wide * 10 + c - '0';
-        i +:= 1;
-        c := byte i of format; }
-      if an <= na then av := arg!an;
-      an +:= 1;
-      test c = 'd' then
-        test wide > 0 then
-          outnow(av, wide, fill)
-        or
-          outno(av)
-      or test c = 'f' then
-        outf(av)
-      or test c = 's' then
-        outs(av, wide)
-      or test c = 'c' then
-        outch(av)
-      or test c = 'x' then
-        test wide > 0 then
-          outhexw(av, wide, fill)
-        or
-          outhex(av)
-      or test c = 'b' then
-        test wide > 0 then
-          outbinw(av, wide, fill)
-        or
-          outbin(av)
-      or
-      { outch('%');
-        outch(c) } }
-    or
-      outch(c);
-    i := i + 1 } }
+let log(format) be {
+  if format = nil \/ LOG_DEBUG = false then return;
+  out(format);
+}
 
 let perror(code) be {
     switchon code into {
     case -2:
-        outs("ERR_READ_PARAMS\n")
+        outs("ERR_READ_PARAMS\n");
         endcase;
     case -3:
         out("ERR_DEV_NUMBER\n");
