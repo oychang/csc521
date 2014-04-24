@@ -7,7 +7,8 @@ manifest {
     // I guess arbitrary numbers of discs could be supported
     MAIN_DISC_UNIT = 1,
     // location of superblock on disc
-    SB_BLOCKNUM = 1,
+    // NB: blocks are 0-indexed
+    SB_BLOCKNUM = 0,
     // anatomy of superblock:
     // (1) magic number to tell if our filesystem exists or not
     SB_MAGICNUM_OFFSET = 0,
