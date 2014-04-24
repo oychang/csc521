@@ -2,7 +2,8 @@ export
 {   log,
     perror }
 
-manifest {  DEBUG = false }
+// XXX: If debugging, set to true, else false
+manifest {  DEBUG = true }
 // Copy-and-pasted out with extra conditional at top
 let log(format) be
 { let i = 0, an = 1, na = numbargs(), arg = @format;
