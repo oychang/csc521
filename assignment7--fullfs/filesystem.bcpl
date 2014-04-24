@@ -9,3 +9,6 @@ let get_physical_disc_size(unit_number) be
 let start() be {
 	out("%d\n", get_physical_disc_size(1));
 	return }
+
+
+

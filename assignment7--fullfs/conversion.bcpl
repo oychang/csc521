@@ -1,13 +1,13 @@
-//import "io" // for tests 
+//import "io" // for tests
 
-export {
-	ceild,
+export
+{	ceild,
 	words_to_bytes, words_to_blocks,
 	bytes_to_words, bytes_to_blocks,
 	blocks_to_words, blocks_to_bytes }
 
-manifest {
-	WORDS_PER_BLOCK = 128,
+manifest
+{	WORDS_PER_BLOCK = 128,
 	BYTES_PER_WORD = 4 }
 
 
@@ -32,9 +32,9 @@ let blocks_to_words(b) be
 let blocks_to_bytes(b) be
 	resultis words_to_bytes(blocks_to_words(b))
 
-// vim: ^v & shift+i & ESC
-//let start() be {
-//	out("4 ?= %d\n", words_to_bytes(1));
+// vim: ^v -> I -> ESC
+//let start() be
+//{	out("4 ?= %d\n", words_to_bytes(1));
 //	out("1 ?= %d; 2 ?= %d\n", words_to_blocks(50), words_to_blocks(256));
 //
 //	out("5 ?= %d; 6 ?= %d\n", bytes_to_words(20), bytes_to_words(21));
