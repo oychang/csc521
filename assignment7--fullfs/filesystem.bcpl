@@ -3,6 +3,8 @@ import "conversion"
 import "fsutils"
 
 manifest {
+    // default disc number to load
+    // I guess arbitrary numbers of discs could be supported
     MAIN_DISC_UNIT = 1,
     // location of superblock on disc
     SB_BLOCKNUM = 1,

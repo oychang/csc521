@@ -9,5 +9,5 @@ default:
 clean:
 	rm -f *.bcl *.obj *.ass
 clean-submit: clean
-	rm -f *.exe
+	rm -f *.exe *.disc
 
