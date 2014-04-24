@@ -2,6 +2,10 @@ import "io"
 import "conversion"
 import "fsutils"
 
+export {
+    init_fs
+}
+
 manifest {
     // default disc number to load
     // I guess arbitrary numbers of discs could be supported
@@ -37,7 +41,8 @@ let init_fs_unsafe(disc_unit) be {
     // (2) disc size
     sizeret := get_physical_disc_size(disc_unit);
     if sizeret < 0 then {
-        outs("init_fs_unsafe: could not get disc size\n");
+        log("could not get disc size\n");
+        perror(sizeret);
         resultis false
     }
     buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
@@ -46,7 +51,8 @@ let init_fs_unsafe(disc_unit) be {
     // finally write out
     writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
     if writeret < 0 then {
-        outs("init_fs_unsafe: could not write superblock");
+        log("could not write superblock\n");
+        perror(writeret);
         resultis false
     }
 
@@ -60,16 +66,10 @@ let init_fs(disc_unit) be {
     // Check if filesystem already exists
     read_block(disc_unit, SB_BLOCKNUM, buf);
     if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then {
-        out("found preexisting file system on disc unit %d...\n", disc_unit);
-        resultis false
+        log("found preexisting file system on disc unit %d...\n", disc_unit);
+        log("not overwriting...\n");
+        resultis false;
     }
-
     // Otherwise, create superblock and root directory
     resultis init_fs_unsafe(disc_unit)
-}
-
-
-let start() be {
-    init_fs(MAIN_DISC_UNIT);
-    return
 }

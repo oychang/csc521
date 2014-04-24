@@ -1,6 +1,6 @@
 import "io"
 
-export { log, perror }
+export { log, perror, ins }
 manifest {  LOG_DEBUG = true }
 
 let log(format) be {
@@ -31,3 +31,19 @@ let perror(code) be {
 
     return
 }
+
+// straight up copy-pasted
+// http://rabbit.eng.miami.edu/class/een521/samples/r2.b
+let ins(string, veclen) be
+{ let max = (veclen-1)*4;
+  let length = 0;
+
+  while length < max do
+  { let c = inch();
+    if c = '\n' then break;
+    if c = 4 then break; // ctrl+d
+    byte length of string := c;
+    length +:= 1 }
+
+  byte length of string := 0;
+  resultis string }

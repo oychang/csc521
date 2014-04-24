@@ -8,7 +8,7 @@ from subprocess import call
 from glob import glob
 
 STANDALONE = (
-    'filesystem',
+    'msh',
 )
 
 

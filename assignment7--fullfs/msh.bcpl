@@ -1,0 +1,14 @@
+import "io"
+import "filesystem"
+import "fsutils"
+
+// msh: murrell shell
+let start() be {
+    let buf = vec 256;
+
+    {
+        out("$ ");
+        ins(buf, 256);
+        out("echo = %d\n", buf ! 0);
+    } repeatwhile buf ! 0 /= 4;
+}
