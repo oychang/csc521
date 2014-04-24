@@ -1,0 +1,11 @@
+import "io"
+import "conversion"
+
+
+let get_physical_disc_size(unit_number) be
+	resultis devctl(DC_DISC_CHECK, unit_number)
+
+
+let start() be {
+	out("%d\n", get_physical_disc_size(1));
+	return }
