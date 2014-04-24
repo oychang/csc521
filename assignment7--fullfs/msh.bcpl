@@ -2,13 +2,18 @@ import "io"
 import "filesystem"
 import "fsutils"
 
+manifest {
+    MAX_LINE_LENGTH = 256,
+    FIRST_CHAR = 0,
+    EOF_CHAR = 4
+}
+
 // msh: murrell shell
 let start() be {
-    let buf = vec 256;
+    let buf = vec MAX_LINE_LENGTH;
 
     {
         out("$ ");
-        ins(buf, 256);
-        out("echo = %d\n", buf ! 0);
-    } repeatwhile buf ! 0 /= 4;
+        ins(buf, MAX_LINE_LENGTH);
+    } repeatwhile buf ! FIRST_CHAR /= EOF_CHAR;
 }
