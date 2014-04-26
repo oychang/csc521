@@ -52,3 +52,10 @@ let strcmp(a, b) be {
       resultis false;
     if ac = 0 /\ bc = 0 then resultis true; }
   resultis false }
+
+let get_physical_disc_size(unit_number) be
+    resultis devctl(DC_DISC_CHECK, unit_number)
+let read_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
+let write_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);

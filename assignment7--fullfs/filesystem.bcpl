@@ -1,63 +1,16 @@
 import "io"
 import "conversion"
 import "fsutils"
+import "superblock"
 
 export {
     init_fs, init_fs_unsafe,
     fs
 }
 
-manifest {
-    // default disc number to load
-    // I guess arbitrary numbers of discs could be supported
-    MAIN_DISC_UNIT = 1,
-    // location of superblock on disc
-    // NB: blocks are 0-indexed
-    SB_BLOCKNUM = 0,
-    // anatomy of superblock:
-    // (1) magic number to tell if our filesystem exists or not
-    SB_MAGICNUM_OFFSET = 0,
-    SB_MAGICNUM = 0x3434,
-    // (2) size of disc at format time
-    SB_FS_DISCSIZE_OFFSET = 1
-    // (3)
-}
-
-
-let get_physical_disc_size(unit_number) be
-    resultis devctl(DC_DISC_CHECK, unit_number)
-let read_block(disc_unit, block, buf) be
-    resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
-let write_block(disc_unit, block, buf) be
-    resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);
-
 // Initializes the fs without checking for previously existing fs
-let init_fs_unsafe(disc_unit) be {
-    let writeret, sizeret;
-    let buf = vec(WORDS_PER_BLOCK);
-
-    // (1): magic number
-    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
-    // (2) disc size
-    sizeret := get_physical_disc_size(disc_unit);
-    if sizeret < 0 then {
-        outs("could not get disc size\n");
-        perror(sizeret);
-        resultis false
-    }
-    buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
-    // (3)
-
-    // finally write out
-    writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
-    if writeret < 0 then {
-        outs("could not write superblock\n");
-        perror(writeret);
-        resultis false
-    }
-
-    resultis true
-}
+let init_fs_unsafe(disc_unit) be
+    resultis create_superblock(disc_unit)
 
 // Checks for fs already in existence.
 // To bypass, just delete `maindrive.disc`
@@ -74,6 +27,4 @@ let init_fs(disc_unit) be {
     resultis init_fs_unsafe(disc_unit)
 }
 
-let fs() be {
-
-}
+let fs() be {}

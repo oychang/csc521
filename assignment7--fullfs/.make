@@ -14,6 +14,7 @@ STANDALONE = (
 BCPLS = (
     'conversion',
     'fsutils',
+    'superblock',
     'filesystem',
     'msh',
 )
