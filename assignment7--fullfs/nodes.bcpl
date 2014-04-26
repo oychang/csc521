@@ -1,5 +1,11 @@
 import "io"
 import "fsutils"
+import "superblock"
+
+export {
+    get_current_time, print_time,
+    set_mtime, get_size, get_level
+}
 
 manifest {
     // (1) Name field
@@ -32,7 +38,6 @@ let set_ctime(node) be
     get_current_time(node + node_ctime)
 let set_mtime(node) be
     get_current_time(node + node_mtime)
-// TODO
 let print_time(compressed_time) be {
     let v0 = compressed_time ! 0;
     let v1 = compressed_time ! 1;
@@ -70,26 +75,19 @@ let set_type(node, is_dir) be
 // Creates a node in the FS that corresponds to either a directory
 // or a file.
 // name: string, is_dir: boolean, size: size in bytes
-let create_node(name, is_dir, size) be {
-//    // TODO: use real syntax
-//    let header = fl_pop(nil, 1);
-//
-//    set_node_name(header, name);
-//    set_size(header, size);
-//    set_ctime(header);
-//    set_mtime(header);
-//    set_type(node, is_dir);
-//    set_level(node, 1);
-//
-//    // TODO: actually write
-//    write_block()
+let create_node(disc_no, name, is_dir, size) be {
+    let block_number = fl_pop();
+    let buf = vec words_per_block;
+
+    set_name(buf, name);
+    set_size(buf, size);
+    set_ctime(buf);
+    set_mtime(buf);
+    set_type(buf, is_dir);
+    set_level(buf, 1);
+
+    write_block(disc_no, node, buf);
 }
 
 let add_data(node, buf) be {
 }
-
-//let start() be {
-//    let buf = vec 2;
-//    get_current_time(buf);
-//    print_time(buf);
-//}

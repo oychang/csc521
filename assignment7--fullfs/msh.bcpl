@@ -2,10 +2,8 @@ import "io"
 import "filesystem"
 import "fsutils"
 import "superblock"
+import "nodes"
 
-manifest {
-    MAX_LINE_LENGTH = 256
-}
 
 let format() be {
     let s, name = vec 3;
@@ -20,23 +18,30 @@ let format() be {
             init_fs_unsafe(s, name);
         }
     }
-    return;
 }
 
+let date() be {
+    let buf = vec 2;
+    get_current_time(buf);
+    print_time(buf);
+}
+
+manifest { max_command_chars = 256 }
 let start() be {
-	let buf = vec max_line_length;
+	let buf = vec max_command_chars;
 
     // XXX: ensure that this remains up to date
-    outs("possible commands: format, df\n");
+    outs("commands: format, df, date\n");
     {
         out("$ ");
-        ins(buf, MAX_LINE_LENGTH);
+        ins(buf, max_command_chars);
 
         test strcmp(buf, "format") then {
             format();
         } else test strcmp(buf, "df") then {
             df();
-        // TODO: Remove, this is for testing
+        } else test strcmp(buf, "date") then {
+            date();
         } else {
             finish;
         }

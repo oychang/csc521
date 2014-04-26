@@ -1,6 +1,7 @@
 import "io"
 import "fsutils"
 import "conversion"
+import "nodes"
 
 export {
     create_superblock,
