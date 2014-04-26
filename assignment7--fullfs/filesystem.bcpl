@@ -41,7 +41,7 @@ let init_fs_unsafe(disc_unit) be {
     // (2) disc size
     sizeret := get_physical_disc_size(disc_unit);
     if sizeret < 0 then {
-        log("could not get disc size\n");
+        outs("could not get disc size\n");
         perror(sizeret);
         resultis false
     }
@@ -51,7 +51,7 @@ let init_fs_unsafe(disc_unit) be {
     // finally write out
     writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
     if writeret < 0 then {
-        log("could not write superblock\n");
+        outs("could not write superblock\n");
         perror(writeret);
         resultis false
     }
@@ -66,8 +66,8 @@ let init_fs(disc_unit) be {
     // Check if filesystem already exists
     read_block(disc_unit, SB_BLOCKNUM, buf);
     if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then {
-        log("found preexisting file system on disc unit %d...\n", disc_unit);
-        log("not overwriting...\n");
+        out("found preexisting file system on disc unit %d...\n", disc_unit);
+        outs("not overwriting...\n");
         resultis false;
     }
     // Otherwise, create superblock and root directory

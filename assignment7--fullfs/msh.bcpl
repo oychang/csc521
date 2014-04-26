@@ -4,8 +4,6 @@ import "fsutils"
 
 manifest {
     MAX_LINE_LENGTH = 256,
-    FIRST_CHAR = 0,
-    EOF_CHAR = 4
 }
 
 let format() be {
@@ -13,9 +11,9 @@ let format() be {
     outs("what disc unit do you want to format?\n> ");
     s := inno();
     if not init_fs(s) then {
-        outs("force format?\n[1=yes]> ");
+        outs("force format?\n[1=yes,0=no]> ");
         if inno() = 1 then {
-            outs("formatting...\n")
+            outs("formatting...\n");
             init_fs_unsafe(s);
         }
     }
@@ -25,6 +23,7 @@ let format() be {
 let start() be {
     let buf = vec MAX_LINE_LENGTH;
 
+    outs("possible commands: format\n");
     {
         out("$ ");
         ins(buf, MAX_LINE_LENGTH);
@@ -32,5 +31,5 @@ let start() be {
         if strcmp(buf, "format") then {
             format();
         }
-    } repeatwhile buf ! FIRST_CHAR /= EOF_CHAR;
+    } repeat;
 }

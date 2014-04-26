@@ -1,12 +1,6 @@
 import "io"
 
-export { log, perror, ins, strcmp }
-manifest {  LOG_DEBUG = true }
-
-let log(format) be {
-  if format = nil \/ LOG_DEBUG = false then return;
-  out(format);
-}
+export { perror, ins, strcmp }
 
 let perror(code) be {
     switchon code into {
@@ -41,7 +35,6 @@ let ins(string, veclen) be
   while length < max do
   { let c = inch();
     if c = '\n' then break;
-    if c = 4 then break; // ctrl+d
     byte length of string := c;
     length +:= 1 }
 
@@ -49,7 +42,7 @@ let ins(string, veclen) be
   resultis string }
 
 // Compare null-terminated strings a and b
-mainfest { max_file_name_bytes = 512 }
+manifest { max_file_name_bytes = 512 }
 let strcmp(a, b) be {
   for i = 0 to max_file_name_bytes do {
     let ac = byte i of a;
