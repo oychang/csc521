@@ -31,10 +31,10 @@ let start() be {
 	let buf = vec max_command_chars;
 
     // XXX: ensure that this remains up to date
-    outs("possible commands: format, df, date\n");
+    outs("commands: format, df, date\n");
     {
         out("$ ");
-        ins(buf, MAX_LINE_LENGTH);
+        ins(buf, max_command_chars);
 
         test strcmp(buf, "format") then {
             format();
