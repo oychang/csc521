@@ -4,9 +4,6 @@ import "fsutils"
 import "superblock"
 import "nodes"
 
-manifest {
-    MAX_LINE_LENGTH = 256
-}
 
 let format() be {
     let s, name = vec 3;
@@ -31,8 +28,9 @@ let date() be {
     return
 }
 
+manifest { max_command_chars = 256 }
 let start() be {
-	let buf = vec max_line_length;
+	let buf = vec max_command_chars;
 
     // XXX: ensure that this remains up to date
     outs("possible commands: format, df, date\n");
@@ -46,7 +44,6 @@ let start() be {
             df();
         } else test strcmp(buf, "date") then {
             date();
-        // TODO: Remove, this is for testing
         } else {
             finish;
         }

@@ -3,7 +3,8 @@ import "fsutils"
 import "superblock"
 
 export {
-    get_current_time, print_time
+    get_current_time, print_time,
+    set_mtime, get_size, get_level
 }
 
 manifest {
