@@ -3,7 +3,7 @@ import "conversion"
 import "fsutils"
 
 export {
-    init_fs
+    init_fs, init_fs_unsafe
 }
 
 manifest {

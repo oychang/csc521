@@ -8,12 +8,29 @@ manifest {
     EOF_CHAR = 4
 }
 
-// msh: murrell shell
+let format() be {
+    let s;
+    outs("what disc unit do you want to format?\n> ");
+    s := inno();
+    if not init_fs(s) then {
+        outs("force format?\n[1=yes]> ");
+        if inno() = 1 then {
+            outs("formatting...\n")
+            init_fs_unsafe(s);
+        }
+    }
+    return;
+}
+
 let start() be {
     let buf = vec MAX_LINE_LENGTH;
 
     {
         out("$ ");
         ins(buf, MAX_LINE_LENGTH);
+
+        if strcmp(buf, "format") then {
+            format();
+        }
     } repeatwhile buf ! FIRST_CHAR /= EOF_CHAR;
 }

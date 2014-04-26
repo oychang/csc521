@@ -1,6 +1,6 @@
 import "io"
 
-export { log, perror, ins }
+export { log, perror, ins, strcmp }
 manifest {  LOG_DEBUG = true }
 
 let log(format) be {
@@ -47,3 +47,14 @@ let ins(string, veclen) be
 
   byte length of string := 0;
   resultis string }
+
+// Compare null-terminated strings a and b
+mainfest { max_file_name_bytes = 512 }
+let strcmp(a, b) be {
+  for i = 0 to max_file_name_bytes do {
+    let ac = byte i of a;
+    let bc = byte i of b;
+    if ac /= bc then
+      resultis false;
+    if ac = 0 /\ bc = 0 then resultis true; }
+  resultis false }
