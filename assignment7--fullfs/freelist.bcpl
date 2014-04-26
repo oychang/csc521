@@ -1,27 +1,28 @@
 export {
-    fl_push//, fl_pop,
+    fl_push//, fl_pop
 }
 
+// Suppose we can get more than one for both of these.
+let fl_push(block_numbers, n_blocks) be {
+    get stack head
+        get number used blocks
+        word at head of stack :=
+            blocks_to_words(sb_root) - number used blocks
 
-let fl_push(block_number) be {
-
+    let i = stack_head
+    from j = n_blocks to 0 do
+        freelist[i] := block_numbers[j]
+        i--
 }
 
-
-// note, have to get a chunk at a time
-// might as well do well there
-let fl_pop(free_buffer) be {
-//    let current_stack_word;
-//    let used_blocks = get_used_capacity();
+//let fl_pop(buf, n_blocks) be {
+//    get stack head
+//        get number used blocks
+//        word at head of stack :=
+//            blocks_to_words(sb_root) - number used blocks
 //
-//    current_stack_word := used_blocks / 2;
-//    // if even, get real high
-//    test current_stack_word rem 2 = 0 then {
-//
-//    } else {
-//
-//    }
-//
-//
-//    return
-}
+//    let i = stack_head
+//    from n_blocks to 0 do
+//        buf.append(freelist[i])
+//        i++
+//}
