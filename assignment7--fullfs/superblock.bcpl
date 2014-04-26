@@ -1,6 +1,11 @@
+import "io"
 import "fsutils"
 
-export { create_superblock }
+export {
+    create_superblock,
+    sb_blocknum,
+    sb_magic, sb_magic_value
+}
 
 // Constants for superblock
 manifest {
@@ -8,32 +13,50 @@ manifest {
     sb_blocknum = 0,
     // (1) Magic number to identify filesystem
     sb_magic = 0, sb_magic_value = 0x3434,
-    // (2) disc capacities (two things share)
+    // (2) disc capacities (two fields share same word)
     sb_size = 1,
-    // (3)
+    sb_total_size = selector 31 : 16, sb_used_size = selector 16 : 0,
+    // (3) location of root directory
+    sb_root = 2,
+    // (4) location of start (that is, the bottom) of the free stack
+    sb_freelist = 3
 }
 
+let set_magic(addr) be
+    addr ! sb_magic := sb_magic_value
+
+let set_total_capacity(addr, size) be
+    sb_total_size from addr ! sb_size := size
+let get_total_capacity(addr) be
+    resultis sb_total_size from addr ! sb_size
+let set_used_capacity(addr, size) be
+    sb_used_size from addr ! sb_size := size
+let get_used_capacity(addr) be
+    resultis sb_used_size from addr ! sb_size
+
 let create_superblock(unit_number) be {
-    let writeret, sizeret;
-    let buf = vec(WORDS_PER_BLOCK);
+//    let writeret, sizeret;
+//    let buf = vec(WORDS_PER_BLOCK);
+//
+//    // (1): magic number
+//    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
+//    // (2) disc size
+//    sizeret := get_physical_disc_size(disc_unit);
+//    if sizeret < 0 then {
+//        outs("could not get disc size\n");
+//        perror(sizeret);
+//        resultis false
+//    }
+//    buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
+//    // (3)
+//
+//    // finally write out
+//    writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
+//    if writeret < 0 then {
+//        outs("could not write superblock\n");
+//        perror(writeret);
+//        resultis false
+//    }
 
-    // (1): magic number
-    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
-    // (2) disc size
-    sizeret := get_physical_disc_size(disc_unit);
-    if sizeret < 0 then {
-        outs("could not get disc size\n");
-        perror(sizeret);
-        resultis false
-    }
-    buf ! SB_FS_DISCSIZE_OFFSET := sizeret;
-    // (3)
-
-    // finally write out
-    writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
-    if writeret < 0 then {
-        outs("could not write superblock\n");
-        perror(writeret);
-        resultis false
-    }
+    resultis true
 }

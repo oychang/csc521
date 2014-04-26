@@ -15,10 +15,10 @@ let init_fs_unsafe(disc_unit) be
 // Checks for fs already in existence.
 // To bypass, just delete `maindrive.disc`
 let init_fs(disc_unit) be {
-    let buf = vec(WORDS_PER_BLOCK);
+    let buf = vec(words_per_block);
     // Check if filesystem already exists
-    read_block(disc_unit, SB_BLOCKNUM, buf);
-    if buf ! SB_MAGICNUM_OFFSET = SB_MAGICNUM then {
+    read_block(disc_unit, sb_blocknum, buf);
+    if buf ! sb_magic = sb_magic_value then {
         out("found preexisting file system on disc unit %d...\n", disc_unit);
         outs("not overwriting...\n");
         resultis false;

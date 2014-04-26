@@ -1,6 +1,10 @@
 import "io"
 
-export { perror, ins, strcmp }
+export {
+  perror, ins, strcmp,
+  get_physical_disc_size,
+  read_block, write_block
+}
 
 // All of these values come from the detailed emulator documentation.
 let perror(code) be {
