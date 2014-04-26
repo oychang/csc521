@@ -17,7 +17,7 @@ BCPLS = (
     'superblock',
     'filesystem',
     'freelist',
-    'nodes'
+    'nodes',
     'msh',
 )
 

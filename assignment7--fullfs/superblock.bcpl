@@ -17,14 +17,15 @@ manifest {
     // (1) Magic number to identify filesystem
     sb_magic = 0, sb_magic_value = 0x34343434,
     // (2) Name of the disc (three words => 11 chars)
-    sb_name = 1, sb_name_words = 3,
-    // (3) Disc capacities (two fields share same word)
-    sb_size = 4,
-    sb_total_size = selector 31 : 16, sb_used_size = selector 16 : 0,
-    // (4) Location of root directory
-    sb_root = 5,
-    // (5) Location of start of the free stack
-    sb_freelist = 6
+    sb_name = sb_magic + 1, sb_name_words = 3,
+    // (3) Disc unformatted capacity
+    sb_size = sb_name + sb_name_words,
+    // (4) Disc used size
+    sb_used_size = sb_size + 1,
+    // (5) Location of root directory
+    sb_root = sb_used_size + 1,
+    // (6) Location of start of the free stack
+    sb_freelist = sb_root + 1
 }
 
 let set_magic(buf) be
@@ -36,13 +37,13 @@ let get_name(dest, buf) be
     strncpy(dest, buf+sb_name, sb_name_words)
 
 let set_total_capacity(buf, size) be
-    sb_total_size from buf ! sb_size := size
+    buf ! sb_size := size
 let get_total_capacity(buf) be
-    resultis sb_total_size from buf ! sb_size
+    resultis buf ! sb_size
 let set_used_capacity(buf, size) be
-    sb_used_size from buf ! sb_size := size
+    buf ! sb_used_size := size
 let get_used_capacity(buf) be
-    resultis sb_used_size from buf ! sb_size
+    resultis buf ! sb_used_size
 
 let set_root_location(buf, addr) be
     buf ! sb_root := addr
@@ -51,15 +52,11 @@ let get_root_location(buf) be
 
 let create_superblock(unit_number, name) be {
     let buf = vec words_per_block, disc_size;
-    let free_list_words, super_block_words, super_block_blocks;
+    let super_block_blocks;
 
     // fixme: check if lt 0 and perror()
     disc_size := get_physical_disc_size(unit_number);
-    // two since we're double packing addresses
-    // depends on having a max of 2^16 blocks
-    free_list_words := ceild(disc_size, 2);
-    super_block_words := free_list_words + sb_freelist;
-    super_block_blocks := words_to_blocks(super_block_words);
+    super_block_blocks := words_to_blocks(disc_size + sb_freelist);
 
     set_magic(buf);
     set_name(buf, name);
@@ -91,7 +88,7 @@ let df() be {
         if retval <= 0 then break;
 
         read_block(disc_no, sb_blocknum, buf);
-        // disc no, name, sizes, root location
+        // TODO: do not show if disc unformatted
         get_name(str, buf);
         out("disc %d: %s\n", disc_no, str);
         out("total size: %d blocks    ", get_total_capacity(buf));
