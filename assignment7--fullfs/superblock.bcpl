@@ -25,21 +25,24 @@ manifest {
 let set_magic(addr) be
     addr ! sb_magic := sb_magic_value
 
-let set_total_capacity(addr, size) be
-    sb_total_size from addr ! sb_size := size
-let get_total_capacity(addr) be
-    resultis sb_total_size from addr ! sb_size
-let set_used_capacity(addr, size) be
-    sb_used_size from addr ! sb_size := size
-let get_used_capacity(addr) be
-    resultis sb_used_size from addr ! sb_size
+let set_total_capacity(buf, size) be
+    sb_total_size from buf ! sb_size := size
+let get_total_capacity(buf) be
+    resultis sb_total_size from buf ! sb_size
+let set_used_capacity(buf, size) be
+    sb_used_size from buf ! sb_size := size
+let get_used_capacity(buf) be
+    resultis sb_used_size from buf ! sb_size
+
+let set_root_location(buf, addr) be {
+    buf ! sb_root := addr;
+    return
+}
 
 let create_superblock(unit_number) be {
 //    let writeret, sizeret;
 //    let buf = vec(WORDS_PER_BLOCK);
 //
-//    // (1): magic number
-//    buf ! SB_MAGICNUM_OFFSET := SB_MAGICNUM;
 //    // (2) disc size
 //    sizeret := get_physical_disc_size(disc_unit);
 //    if sizeret < 0 then {
