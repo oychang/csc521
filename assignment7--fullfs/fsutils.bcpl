@@ -1,7 +1,7 @@
 import "io"
 
 export {
-  perror, ins, strcmp,
+  perror, ins, strcmp, strncpy,
   get_physical_disc_size,
   read_block, write_block
 }
@@ -56,6 +56,15 @@ let strcmp(a, b) be {
       resultis false;
     if ac = 0 /\ bc = 0 then resultis true; }
   resultis false }
+// Copy up to 0..n-1 bytes into addr
+// Guaranteed that n-1th byte is 0
+let strncpy(dest, str, n) be {
+  for i = 0 to (n*4)-2 do {
+    byte i of dest := byte i of str;
+  }
+  byte (n*4)-1 of dest := 0;
+  return
+}
 
 let get_physical_disc_size(unit_number) be
     resultis devctl(DC_DISC_CHECK, unit_number)

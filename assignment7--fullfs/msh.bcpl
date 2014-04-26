@@ -21,19 +21,24 @@ let format() be {
 }
 
 let start() be {
-    let buf = vec MAX_LINE_LENGTH;
+    let s = "abcdefg";
+    let b = vec 2;
+    strncpy(b, s, 2);
+    outs(b);
 
-    // XXX: ensure that this remains up to date
-    outs("possible commands: format\n");
-    {
-        out("$ ");
-        ins(buf, MAX_LINE_LENGTH);
-
-        test strcmp(buf, "format") then {
-            format();
-        // TODO: Remove, this is for testing
-        } else if strcmp(buf, "") then {
-            fs();
-        }
-    } repeat;
+//    let buf = vec MAX_LINE_LENGTH;
+//
+//    // XXX: ensure that this remains up to date
+//    outs("possible commands: format\n");
+//    {
+//        out("$ ");
+//        ins(buf, MAX_LINE_LENGTH);
+//
+//        test strcmp(buf, "format") then {
+//            format();
+//        // TODO: Remove, this is for testing
+//        } else if strcmp(buf, "") then {
+//            fs();
+//        }
+//    } repeat;
 }
