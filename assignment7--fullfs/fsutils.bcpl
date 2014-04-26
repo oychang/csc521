@@ -1,32 +1,38 @@
 import "io"
 
 export {
-  perror, ins, strcmp, strncpy,
+  perror, ins, strcmp, strncmp, strncpy,
   get_physical_disc_size,
   read_block, write_block
 }
 
 // All of these values come from the detailed emulator documentation.
 let perror(code) be {
-    switchon code into {
-    case -2:
-        outs("ERR_READ_PARAMS\n");
-        endcase;
-    case -3:
-        out("ERR_DEV_NUMBER\n");
-        endcase;
-    case -4:
-        out("ERR_POSITION\n");
-        endcase;
-    case -5:
-        out("ERR_MEMORY\n");
-        endcase;
-    case -6:
-        out("ERR_DEV_FAILED\n");
-        endcase;
-    default:
-        out("unknown error code\n");
-    }
+  switchon code into {
+  case -2:
+    outs("ERR_READ_PARAMS\n");
+    endcase;
+  case -3:
+    out("ERR_DEV_NUMBER\n");
+    endcase;
+  case -4:
+    out("ERR_POSITION\n");
+    endcase;
+  case -5:
+    out("ERR_MEMORY\n");
+    endcase;
+  case -6:
+    out("ERR_DEV_FAILED\n");
+    endcase;
+  case -7:
+    out("ERR_NOT_FOUND\n");
+    endcase;
+  case -8:
+    out("ERR_BAD_PARAM\n");
+    endcase;
+  default:
+    out("unknown error code\n");
+  }
 }
 
 // straight up copy-pasted
@@ -54,6 +60,15 @@ let strcmp(a, b) be {
       resultis false;
     if ac = 0 /\ bc = 0 then resultis true; }
   resultis false }
+let strncmp(a, b, n) be {
+  for i = 0 to (n-1) do {
+    let ac = byte i of a;
+    let bc = byte i of b;
+    if ac /= bc then
+      resultis false;
+    if ac = 0 /\ bc = 0 then resultis true; }
+  resultis true }
+
 // Copy up to 0..n-1 bytes into addr
 // Guaranteed that n-1th byte is 0
 let strncpy(dest, str, n) be {

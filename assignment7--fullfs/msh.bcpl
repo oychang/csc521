@@ -3,7 +3,7 @@ import "filesystem"
 import "fsutils"
 import "superblock"
 //import "nodes"
-
+//import "stdio"
 
 let format() be {
     let s, name = vec 3;
@@ -23,6 +23,8 @@ let format() be {
 let date() be {
     let buf = vec 2;
 }
+
+let ls(dir) be {}
 
 manifest { max_command_chars = 256 }
 let start() be {
