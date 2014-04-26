@@ -91,3 +91,10 @@ let create_node(disc_no, name, is_dir, size) be {
 
 let add_data(node, buf) be {
 }
+
+let deepen_level() be {
+}
+
+// Let node be the block with header stuff
+let add_level(disc_no, node) be {
+}

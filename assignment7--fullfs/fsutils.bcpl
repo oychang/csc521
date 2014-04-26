@@ -1,7 +1,7 @@
 import "io"
 
 export {
-  perror, ins, strcmp, strncpy,
+  perror, ins, strcmp, strncmp, strncpy,
   get_physical_disc_size,
   read_block, write_block
 }
@@ -54,6 +54,15 @@ let strcmp(a, b) be {
       resultis false;
     if ac = 0 /\ bc = 0 then resultis true; }
   resultis false }
+let strncmp(a, b, n) be {
+  for i = 0 to (n-1) do {
+    let ac = byte i of a;
+    let bc = byte i of b;
+    if ac /= bc then
+      resultis false;
+    if ac = 0 /\ bc = 0 then resultis true; }
+  resultis true }
+
 // Copy up to 0..n-1 bytes into addr
 // Guaranteed that n-1th byte is 0
 let strncpy(dest, str, n) be {
