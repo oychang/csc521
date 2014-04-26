@@ -15,7 +15,7 @@ manifest {
     // Location of superblock on disc. NB: blocks are 0-indexed.
     sb_blocknum = 0,
     // (1) Magic number to identify filesystem
-    sb_magic = 0, sb_magic_value = 0x3434,
+    sb_magic = 0, sb_magic_value = 0x34343434,
     // (2) Name of the disc (three words => 11 chars)
     sb_name = 1, sb_name_words = 3,
     // (3) Disc capacities (two fields share same word)
@@ -31,7 +31,9 @@ let set_magic(buf) be
     buf ! sb_magic := sb_magic_value
 
 let set_name(buf, str) be
-    strncpy(buf+sb_name, str, sb_name_words);
+    strncpy(buf+sb_name, str, sb_name_words)
+let get_name(dest, buf) be
+    strncpy(dest, buf+sb_name, sb_name_words)
 
 let set_total_capacity(buf, size) be
     sb_total_size from buf ! sb_size := size
@@ -48,20 +50,53 @@ let get_root_location(buf) be
     resultis buf ! sb_root
 
 let create_superblock(unit_number, name) be {
-    let buf = vec words_per_block;
-    // TODO: check if lt 0 and perror()
-    let disc_size = get_physical_disc_size(unit_number);
+    let buf = vec words_per_block, disc_size;
+    let free_list_words, super_block_words, super_block_blocks;
+
+    // fixme: check if lt 0 and perror()
+    disc_size := get_physical_disc_size(unit_number);
+    // two since we're double packing addresses
+    // depends on having a max of 2^16 blocks
+    free_list_words := ceild(disc_size, 2);
+    super_block_words := free_list_words + sb_freelist;
+    super_block_blocks := words_to_blocks(super_block_words);
 
     set_magic(buf);
     set_name(buf, name);
     set_total_capacity(buf, disc_size);
     set_free_capacity(buf, disc_size);
 
-    // TODO: root & free calculations
+    // Use first block after end of super block store the root directory
+    // XXX: this is not accurate since freelist presumed to be usable space
+    set_root_location(buf, super_block_blocks + 1);
 
     // Finally, write out
+    // fixme: check if lt 0 and perror()
     write_block(unit_number, sb_blocknum, buf);
+
+    // Push all chunks onto the free stack
+    // TODO: implement
+    //fl_push();
 }
 
-// TODO: implement
-let df() be {}
+let df() be {
+    let buf = vec words_per_block;
+    let str = vec sb_name_words;
+    let disc_no = 1;
+    let retval = 0;
+
+    {
+        retval := get_physical_disc_size(disc_no);
+        if retval <= 0 then break;
+
+        read_block(disc_no, sb_blocknum, buf);
+        // disc no, name, sizes, root location
+        get_name(str, buf);
+        out("disc %d: %s\n", disc_no, str);
+        out("total size: %d blocks    ", get_total_capacity(buf));
+        out("free size: %d blocks    ", get_free_capacity(buf));
+        out("root location: block %d\n\n", get_root_location(buf));
+
+        disc_no +:= 1;
+    } repeat;
+}
