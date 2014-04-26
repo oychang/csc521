@@ -3,7 +3,8 @@ import "io"
 export {
   perror, ins, strcmp, strncmp, strncpy,
   get_physical_disc_size,
-  read_block, write_block
+  read_block, write_block,
+  get_current_time, print_time
 }
 
 // All of these values come from the detailed emulator documentation.
@@ -85,3 +86,25 @@ let read_block(disc_unit, block, buf) be
     resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
 let write_block(disc_unit, block, buf) be
     resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);
+
+let get_current_time(buf) be
+    datetime2(buf)
+let print_time(compressed_time) be {
+    let v0 = compressed_time ! 0;
+    let v1 = compressed_time ! 1;
+
+    let year = selector 13 : 19;
+    let month = selector 4 : 15;
+    let day = selector 5 : 7;
+
+    let hour = selector 5 : 27;
+    let minute = selector 6 : 21;
+    let second = selector 6 : 15;
+    let millisecond = selector 10 : 5;
+
+    out("%d/%d/%d", month from v0, day from v0, year from v0);
+    outs(", ");
+    out("%d:%02d:%02d.%d", hour from v1, minute from v1,
+        second from v1, millisecond from v1);
+    out("\n");
+}

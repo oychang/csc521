@@ -34,7 +34,5 @@ let start() be {
 
     tape_num := mount_tape(buf, 'R');
 
-    if tape_num /= false then {
-
-    }
+    if tape_num /= false then {}
 }

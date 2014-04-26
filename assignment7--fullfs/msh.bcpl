@@ -22,6 +22,8 @@ let format() be {
 
 let date() be {
     let buf = vec 2;
+    get_current_time(buf);
+    print_time(buf);
 }
 
 let ls(dir) be {}

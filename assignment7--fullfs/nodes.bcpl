@@ -1,6 +1,6 @@
 import "io"
 import "fsutils"
-import "superblock"
+//import "superblock"
 
 export {
     get_current_time, print_time,
@@ -32,31 +32,10 @@ let set_node_name(node, name) be
 let get_node_name(node, name) be
     strncpy(name, node + node_name, node_name_words)
 
-let get_current_time(buf) be
-    datetime2(buf)
 let set_ctime(node) be
     get_current_time(node + node_ctime)
 let set_mtime(node) be
     get_current_time(node + node_mtime)
-let print_time(compressed_time) be {
-    let v0 = compressed_time ! 0;
-    let v1 = compressed_time ! 1;
-
-    let year = selector 13 : 19;
-    let month = selector 4 : 15;
-    let day = selector 5 : 7;
-
-    let hour = selector 5 : 27;
-    let minute = selector 6 : 21;
-    let second = selector 6 : 15;
-    let millisecond = selector 10 : 5;
-
-    out("%d/%d/%d", month from v0, day from v0, year from v0);
-    outs(", ");
-    out("%d:%02d:%02d.%d", hour from v1, minute from v1,
-        second from v1, millisecond from v1);
-    out("\n");
-}
 
 let get_size(node) be
     resultis node ! node_size
