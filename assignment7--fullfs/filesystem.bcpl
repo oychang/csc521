@@ -9,12 +9,12 @@ export {
 }
 
 // Initializes the fs without checking for previously existing fs
-let init_fs_unsafe(disc_unit) be
-    resultis create_superblock(disc_unit)
+let init_fs_unsafe(disc_unit, name) be
+    resultis create_superblock(disc_unit, name)
 
 // Checks for fs already in existence.
 // To bypass, just delete `maindrive.disc`
-let init_fs(disc_unit) be {
+let init_fs(disc_unit, name) be {
     let buf = vec(words_per_block);
     // Check if filesystem already exists
     read_block(disc_unit, sb_blocknum, buf);
@@ -24,7 +24,8 @@ let init_fs(disc_unit) be {
         resultis false;
     }
     // Otherwise, create superblock and root directory
-    resultis init_fs_unsafe(disc_unit)
+    resultis init_fs_unsafe(disc_unit, name)
 }
 
+// XXX: pseudo-main for testing...to be removed
 let fs() be {}

@@ -1,10 +1,13 @@
 import "io"
 import "fsutils"
+import "conversion"
 
 export {
     create_superblock,
     sb_blocknum,
-    sb_magic, sb_magic_value
+    sb_name_words,
+    sb_magic, sb_magic_value,
+    df
 }
 
 // Constants for superblock
@@ -14,56 +17,51 @@ manifest {
     // (1) Magic number to identify filesystem
     sb_magic = 0, sb_magic_value = 0x3434,
     // (2) Name of the disc (three words => 11 chars)
-    sb_name = 1,
-    // (3) disc capacities (two fields share same word)
+    sb_name = 1, sb_name_words = 3,
+    // (3) Disc capacities (two fields share same word)
     sb_size = 4,
-    sb_total_size = selector 31 : 16, sb_used_size = selector 16 : 0,
-    // (4) location of root directory
+    sb_total_size = selector 31 : 16, sb_free_size = selector 16 : 0,
+    // (4) Location of root directory
     sb_root = 5,
-    // (5) location of start (that is, the bottom) of the free stack
+    // (5) Location of start (that is, the bottom) of the free stack
     sb_freelist = 6
 }
 
-let set_magic(addr) be
-    addr ! sb_magic := sb_magic_value
+let set_magic(buf) be
+    buf ! sb_magic := sb_magic_value
 
-let set_name(addr, str) be {
-
-}
+let set_name(buf, str) be
+    strncpy(buf+sb_name, str, sb_name_words);
 
 let set_total_capacity(buf, size) be
     sb_total_size from buf ! sb_size := size
 let get_total_capacity(buf) be
     resultis sb_total_size from buf ! sb_size
-let set_used_capacity(buf, size) be
-    sb_used_size from buf ! sb_size := size
-let get_used_capacity(buf) be
-    resultis sb_used_size from buf ! sb_size
+let set_free_capacity(buf, size) be
+    sb_free_size from buf ! sb_size := size
+let get_free_capacity(buf) be
+    resultis sb_free_size from buf ! sb_size
 
-let set_root_location(buf, addr) be {
-    buf ! sb_root := addr;
-    return
+let set_root_location(buf, addr) be
+    buf ! sb_root := addr
+let get_root_location(buf) be
+    resultis buf ! sb_root
+
+let create_superblock(unit_number, name) be {
+    let buf = vec words_per_block;
+    // TODO: check if lt 0 and perror()
+    let disc_size = get_physical_disc_size(unit_number);
+
+    set_magic(buf);
+    set_name(buf, name);
+    set_total_capacity(buf, disc_size);
+    set_free_capacity(buf, disc_size);
+
+    // TODO: root & free calculations
+
+    // Finally, write out
+    write_block(unit_number, sb_blocknum, buf);
 }
 
-let create_superblock(unit_number) be {
-//    let writeret, sizeret;
-//    let buf = vec(WORDS_PER_BLOCK);
-//
-//    // (2) disc size
-//    sizeret := get_physical_disc_size(disc_unit);
-//    if sizeret < 0 then {
-//        outs("could not get disc size\n");
-//        perror(sizeret);
-//        resultis false
-//    }
-//
-//    // finally write out
-//    writeret := write_block(disc_unit, SB_BLOCKNUM, buf);
-//    if writeret < 0 then {
-//        outs("could not write superblock\n");
-//        perror(writeret);
-//        resultis false
-//    }
-
-    resultis true
-}
+// TODO: implement
+let df() be {}

@@ -1,44 +1,44 @@
 import "io"
 import "filesystem"
 import "fsutils"
+import "superblock"
 
 manifest {
     MAX_LINE_LENGTH = 256
 }
 
 let format() be {
-    let s;
+    let s, name = vec 3;
     outs("what disc unit do you want to format?\n> ");
     s := inno();
-    if not init_fs(s) then {
+    outs("what should it be called?\n> ");
+    ins(name, sb_name_words);
+    if not init_fs(s, name) then {
         outs("force format?\n[1=yes,0=no]> ");
         if inno() = 1 then {
             outs("formatting...\n");
-            init_fs_unsafe(s);
+            init_fs_unsafe(s, name);
         }
     }
     return;
 }
 
 let start() be {
-    let s = "abcdefg";
-    let b = vec 2;
-    strncpy(b, s, 2);
-    outs(b);
+    let buf = vec MAX_LINE_LENGTH;
 
-//    let buf = vec MAX_LINE_LENGTH;
-//
-//    // XXX: ensure that this remains up to date
-//    outs("possible commands: format\n");
-//    {
-//        out("$ ");
-//        ins(buf, MAX_LINE_LENGTH);
-//
-//        test strcmp(buf, "format") then {
-//            format();
-//        // TODO: Remove, this is for testing
-//        } else if strcmp(buf, "") then {
-//            fs();
-//        }
-//    } repeat;
+    // XXX: ensure that this remains up to date
+    outs("possible commands: format, df\n");
+    {
+        out("$ ");
+        ins(buf, MAX_LINE_LENGTH);
+
+        test strcmp(buf, "format") then {
+            format();
+        } else test strcmp(buf, "df") then {
+            df();
+        // TODO: Remove, this is for testing
+        } else {
+            fs();
+        }
+    } repeat;
 }
