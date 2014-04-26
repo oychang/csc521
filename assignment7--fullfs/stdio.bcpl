@@ -1,0 +1,37 @@
+import "io"
+import "conversion"
+import "fsutils"
+
+manifest {
+    tape_prefix_length = 5,
+    tape_number_char = tape_prefix_length + 1,
+}
+
+let open(file, mode) be {}
+let close(fd) be {}
+let fflush(fd) be {}
+
+let read(fd, buf, len) be {
+}
+let write(fd, buf, len) be {}
+
+let mount_tape(fn, mode) be {
+    let tape_no, tape;
+    if strncmp(fn, "/tape", tape_prefix_length) then {
+        tape_no := (byte tape_number_char of fn) - '0';
+        //tape := devctl(DC_TAPE_LOAD, tape_no, fn+8, mode);
+        //out("tape load %d\n", tape);
+        //resultis devctl(DC_TAPE_CHECK, tape_no) = mode;
+    }
+
+    resultis false
+}
+
+let start() be {
+    let buf = vec words_per_block;
+    ins(buf, words_per_block);
+
+    if mount_tape(buf, 'R') = true then {
+        outs("yay");
+    }
+}
