@@ -38,7 +38,7 @@ let start() be {
             df();
         // TODO: Remove, this is for testing
         } else {
-            fs();
+            finish;
         }
     } repeat;
 }

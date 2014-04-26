@@ -4,8 +4,7 @@ import "fsutils"
 import "superblock"
 
 export {
-    init_fs, init_fs_unsafe,
-    fs
+    init_fs, init_fs_unsafe
 }
 
 // Initializes the fs without checking for previously existing fs
@@ -26,6 +25,3 @@ let init_fs(disc_unit, name) be {
     // Otherwise, create superblock and root directory
     resultis init_fs_unsafe(disc_unit, name)
 }
-
-// XXX: pseudo-main for testing...to be removed
-let fs() be {}
