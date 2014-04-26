@@ -27,8 +27,6 @@ let perror(code) be {
     default:
         out("unknown error code\n");
     }
-
-    return
 }
 
 // straight up copy-pasted

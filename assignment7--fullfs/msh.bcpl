@@ -18,14 +18,12 @@ let format() be {
             init_fs_unsafe(s, name);
         }
     }
-    return
 }
 
 let date() be {
     let buf = vec 2;
     get_current_time(buf);
     print_time(buf);
-    return
 }
 
 manifest { max_command_chars = 256 }
