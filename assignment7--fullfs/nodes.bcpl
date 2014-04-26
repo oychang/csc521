@@ -33,7 +33,25 @@ let set_ctime(node) be
 let set_mtime(node) be
     get_current_time(node + node_mtime)
 // TODO
-let print_time(compressed_time) be {}
+let print_time(compressed_time) be {
+    let v0 = compressed_time ! 0;
+    let v1 = compressed_time ! 1;
+
+    let year = selector 13 : 19;
+    let month = selector 4 : 15;
+    let day = selector 5 : 7;
+
+    let hour = selector 5 : 27;
+    let minute = selector 6 : 21;
+    let second = selector 6 : 15;
+    let millisecond = selector 10 : 5;
+
+    out("%d/%d/%d", month from v0, day from v0, year from v0);
+    outs(", ");
+    out("%d:%02d:%02d.%d", hour from v1, minute from v1,
+        second from v1, millisecond from v1);
+    out("\n");
+}
 
 let get_size(node) be
     resultis node ! node_size
@@ -53,20 +71,25 @@ let set_type(node, is_dir) be
 // or a file.
 // name: string, is_dir: boolean, size: size in bytes
 let create_node(name, is_dir, size) be {
-    // TODO: use real syntax
-    let header = fl_pop(nil, 1);
-
-    set_node_name(header, name);
-    set_size(header, size);
-    set_ctime(header);
-    set_mtime(header);
-    set_type(node, is_dir);
-    set_level(node, 1);
-
-    // TODO: actually write
-    write_block()
+//    // TODO: use real syntax
+//    let header = fl_pop(nil, 1);
+//
+//    set_node_name(header, name);
+//    set_size(header, size);
+//    set_ctime(header);
+//    set_mtime(header);
+//    set_type(node, is_dir);
+//    set_level(node, 1);
+//
+//    // TODO: actually write
+//    write_block()
 }
 
 let add_data(node, buf) be {
-
 }
+
+//let start() be {
+//    let buf = vec 2;
+//    get_current_time(buf);
+//    print_time(buf);
+//}
