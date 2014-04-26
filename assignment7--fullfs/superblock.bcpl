@@ -28,6 +28,11 @@ manifest {
     sb_freelist = sb_root + 1
 }
 
+
+let read_superblock(unit_number, buf) be {
+    read_block(unit_number, sb_blocknum, buf);
+}
+
 let set_magic(buf) be
     buf ! sb_magic := sb_magic_value
 
@@ -49,6 +54,47 @@ let set_root_location(buf, addr) be
     buf ! sb_root := addr
 let get_root_location(buf) be
     resultis buf ! sb_root
+
+// Suppose we can get more than one for both of these.
+
+// block_numbers is a vector of block numbers to be pushed (in reverse)
+// n_blocks is the number of (word large) elements in block_numbers
+let fl_push(disc_no, block_numbers, n_blocks) be {
+    let stack_head;
+    let sb = vec words_per_block;
+    read_superblock(disc_no, sb);
+
+    stack_head := blocks_to_words(get_root_location(sb)) - get_used_capacity(sb) - 1;
+
+
+
+        //freelist[i] := block_numbers[j]
+        //:= block_numbers ! j;
+    for i = n_blocks to 0 by (-1 * words_per_block) do {
+        for j = i to 0 do {
+
+        }
+
+        stack_head -:= 1;
+    }
+
+
+
+    set_used_capacity(sb, get_used_capacity(sb) + n_blocks);
+    write_block(disc_no, sb_blocknum, sb)
+}
+
+//let fl_pop(buf, n_blocks) be {
+//    get stack head
+//        get number used blocks
+//        word at head of stack :=
+//            blocks_to_words(sb_root) - number used blocks
+//
+//    let i = stack_head
+//    from n_blocks to 0 do
+//        buf.append(freelist[i])
+//        i++
+//}
 
 let create_superblock(unit_number, name) be {
     let buf = vec words_per_block, disc_size;
@@ -73,6 +119,7 @@ let create_superblock(unit_number, name) be {
 
     // Push all chunks onto the free stack
     // TODO: implement
+    fl_push(unit_number);
     //fl_push();
     // TODO: create root directory
 }
@@ -98,3 +145,4 @@ let df() be {
         disc_no +:= 1;
     } repeat;
 }
+

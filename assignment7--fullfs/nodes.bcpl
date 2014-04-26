@@ -1,0 +1,71 @@
+//import "io"
+
+manifest {
+    // (1) Name field
+    node_name = 0,
+    // 8 words => 31 character max file name
+    node_name_words = 8,
+    // (2) Length in bytes
+    node_size = node_name + node_name_words,
+    // (3) Create time (ctime)
+    node_ctime = node_size + 1,
+    node_ctime_words = 2, // 64 bits
+    // (4) Modified time (mtime)
+    node_mtime = node_ctime + node_ctime_words,
+    node_mtime_words = 2,
+    // (5) Type
+    node_type = node_mtime + node_mtime_words,
+    node_isfile = 0, node_isdir = 1,
+    // (6) Current level
+    node_level = node_type + 1
+}
+
+let set_node_name(node, name) be
+    strncpy(node + node_name, name, node_name_words)
+let get_node_name(node, name) be
+    strncpy(name, node + node_name, node_name_words)
+
+let get_current_time(buf) be
+    datetime2(buf)
+let set_ctime(node) be
+    get_current_time(node + node_ctime)
+let set_mtime(node) be
+    get_current_time(node + node_mtime)
+// TODO
+let print_time(compressed_time) be {}
+
+let get_size(node) be
+    resultis node ! node_size
+let set_size(node, size) be
+    node ! node_size := size
+
+let set_level(node, level) be
+    node ! node_level := level
+let get_level() be
+    resultis node ! node_level
+
+// A -> B, C == A ? B : C
+let set_type(node, is_dir) be
+    node ! node_type := is_dir -> node_isdir, node_isfile
+
+// Creates a node in the FS that corresponds to either a directory
+// or a file.
+// name: string, is_dir: boolean, size: size in bytes
+let create_node(name, is_dir, size) be {
+    // TODO: use real syntax
+    let header = fl_pop(nil, 1);
+
+    set_node_name(header, name);
+    set_size(header, size);
+    set_ctime(header);
+    set_mtime(header);
+    set_type(node, is_dir);
+    set_level(node, 1);
+
+    // TODO: actually write
+    write_block()
+}
+
+let add_data(node, buf) be {
+
+}
