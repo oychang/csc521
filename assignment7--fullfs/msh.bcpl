@@ -24,7 +24,7 @@ let format() be {
 }
 
 let start() be {
-    let buf = vec MAX_LINE_LENGTH;
+	let buf = vec max_line_length;
 
     // XXX: ensure that this remains up to date
     outs("possible commands: format, df\n");

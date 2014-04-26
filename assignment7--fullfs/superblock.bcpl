@@ -59,31 +59,8 @@ let get_root_location(buf) be
 
 // block_numbers is a vector of block numbers to be pushed (in reverse)
 // n_blocks is the number of (word large) elements in block_numbers
-let fl_push(disc_no, block_numbers, n_blocks) be {
-    let stack_head;
-    let sb = vec words_per_block;
-    read_superblock(disc_no, sb);
 
-    stack_head := blocks_to_words(get_root_location(sb)) - get_used_capacity(sb) - 1;
-
-
-
-        //freelist[i] := block_numbers[j]
-        //:= block_numbers ! j;
-    for i = n_blocks to 0 by (-1 * words_per_block) do {
-        for j = i to 0 do {
-
-        }
-
-        stack_head -:= 1;
-    }
-
-
-
-    set_used_capacity(sb, get_used_capacity(sb) + n_blocks);
-    write_block(disc_no, sb_blocknum, sb)
-}
-
+let fl_push() be {}
 //let fl_pop(buf, n_blocks) be {
 //    get stack head
 //        get number used blocks
@@ -146,3 +123,9 @@ let df() be {
     } repeat;
 }
 
+// Returns the index of the word at the head of the free list.
+// This word (and the block it refers to) is currently not being used.
+let get_head_pointer(sb) be {
+    let free_capacity = get_total_capacity(sb) - get_used_capacity(sb);
+    resultis blocks_to_words(sb_freelist) + free_capacity;
+}

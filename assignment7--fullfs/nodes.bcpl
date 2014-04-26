@@ -1,4 +1,5 @@
-//import "io"
+import "io"
+import "fsutils"
 
 manifest {
     // (1) Name field
@@ -41,7 +42,7 @@ let set_size(node, size) be
 
 let set_level(node, level) be
     node ! node_level := level
-let get_level() be
+let get_level(node) be
     resultis node ! node_level
 
 // A -> B, C == A ? B : C
