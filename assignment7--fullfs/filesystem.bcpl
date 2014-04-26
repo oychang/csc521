@@ -3,7 +3,8 @@ import "conversion"
 import "fsutils"
 
 export {
-    init_fs, init_fs_unsafe
+    init_fs, init_fs_unsafe,
+    fs
 }
 
 manifest {
@@ -25,7 +26,6 @@ manifest {
 
 let get_physical_disc_size(unit_number) be
     resultis devctl(DC_DISC_CHECK, unit_number)
-// Utilities for reading/writing a single block
 let read_block(disc_unit, block, buf) be
     resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
 let write_block(disc_unit, block, buf) be
@@ -72,4 +72,8 @@ let init_fs(disc_unit) be {
     }
     // Otherwise, create superblock and root directory
     resultis init_fs_unsafe(disc_unit)
+}
+
+let fs() be {
+
 }

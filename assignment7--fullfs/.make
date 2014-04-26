@@ -5,9 +5,16 @@ pseudo-make for filesystem project
 '''
 
 from subprocess import call
-from glob import glob
 
 STANDALONE = (
+    'msh',
+)
+# Make sure these are in simplest to most complicated order
+# They will be compiled in this order
+BCPLS = (
+    'conversion',
+    'fsutils',
+    'filesystem',
     'msh',
 )
 
@@ -17,8 +24,7 @@ def make():
     warn: even on failure, bcpl & assemble return 0, so the call
     checks do nothing
     '''
-    bcpls = glob('*.bcpl')
-    fns = [f.replace('.bcpl', '') for f in bcpls]
+    fns = list(BCPLS)
 
     for exe in STANDALONE:
         fns.remove(exe)

@@ -1,20 +1,3 @@
-# Style
-* Manifest constants are in screaming snake case
-* Try to namespace constants as much as possible
-* Take advantage of optional braces for one line functions
-* Use snake case for variable names
-* Favor automatic, stack vecs over newvec/freevec
-* Compose small, simple functions into larger, more complex ones whenever
-possible
-* Pass anything that might change as a parameter
-* Try to steer towards pure, non-side effect functions as much as possible
-* Liberally export, but pay attention to namespacing conflicts
-* Add non-library bcpl files to the `.make` file to easily compile
-* Make targets: `make` and `make clean` and `make clean-submit` (removes exes)
-* Wherever possible, use names for numeric constants
-* Error check functions return codes with the pseudo-enums defined above them
-
-
 # Provided Utilities
 * cd (with relative pathnames)
 * ls & tree
@@ -23,7 +6,7 @@ possible
 * touch
 * mkdir
 * cat
-* simple pico
+* simple editor
 
 # Superblock
 * First block on disc

@@ -2,6 +2,7 @@ import "io"
 
 export { perror, ins, strcmp }
 
+// All of these values come from the detailed emulator documentation.
 let perror(code) be {
     switchon code into {
     case -2:
