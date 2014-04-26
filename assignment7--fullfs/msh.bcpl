@@ -2,7 +2,7 @@ import "io"
 import "filesystem"
 import "fsutils"
 import "superblock"
-import "nodes"
+//import "nodes"
 
 
 let format() be {
@@ -22,8 +22,6 @@ let format() be {
 
 let date() be {
     let buf = vec 2;
-    get_current_time(buf);
-    print_time(buf);
 }
 
 manifest { max_command_chars = 256 }
