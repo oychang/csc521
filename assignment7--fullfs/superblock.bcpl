@@ -29,9 +29,10 @@ manifest {
 }
 
 
-let read_superblock(unit_number, buf) be {
+let read_superblock(unit_number, buf) be
     read_block(unit_number, sb_blocknum, buf);
-}
+let write_superblock(unit_number, buf) be
+    write_block(unit_number, sb_blocknum, buf);
 
 let set_magic(buf) be
     buf ! sb_magic := sb_magic_value
@@ -55,12 +56,80 @@ let set_root_location(buf, addr) be
 let get_root_location(buf) be
     resultis buf ! sb_root
 
-// Suppose we can get more than one for both of these.
+// Returns the index of the word at the head of the free list.
+// This word (and the block it refers to) is currently not being used.
+let get_head_pointer(sb) be {
+    let free_capacity = get_total_capacity(sb) - get_used_capacity(sb);
+    resultis blocks_to_words(sb_freelist) + free_capacity;
+}
 
-// block_numbers is a vector of block numbers to be pushed (in reverse)
-// n_blocks is the number of (word large) elements in block_numbers
+// Get the block a word is in.
+let get_words_block(word_number) be
+    resultis blocks_to_words(word_number)
+// Get a word's position within a block
+let get_words_position(word_number) be
+    resultis (blocks_to_words(word_number) rem words_per_block)
 
-let fl_push() be {}
+let fl_push(unit_number, block_to_push) be {
+    let sb = vec words_per_block;
+    let fb = vec words_per_block;
+    let head, head_block, head_word, used_cap;
+    read_superblock(unit_number, sb);
+
+    head := get_head_pointer(sb);          // Index of word at head of free list
+    head_block := get_words_block(head);   // Block head belongs in
+    head_word := get_words_position(head); // Word of that block that head is
+    used_cap := get_used_capacity(sb) - 1; // Number of used blocks
+
+    // head = 6848, head_block = 876544, head_word = -1
+    // used capacity = 47
+    out("head = %d, head_block = %d, head_word = %d\n", head, head_block, head_word);
+    out("used capacity = %d\n", used_cap);
+    return;
+
+    set_used_capacity(sb, used_cap);
+    write_superblock(unit_number, sb);
+
+    read_block(unit_number, head_block, fb);
+    fb ! (head_word + 1) := block_to_push;
+    write_block(unit_number, head_block, fb);
+
+    // Number of blocks pushed
+    // TODO: support pushing more than one at a time
+    resultis 1;
+}
+
+let fl_push_initial(unit_number) be {
+    let sb = vec words_per_block;
+    let fb = vec words_per_block;
+    let h_index, h_block, h_word, used_cap, current_word, root_word;
+    read_superblock(unit_number, sb);
+
+    h_index := sb_freelist; // Index of word at head of free list
+    h_block := get_words_block(h_index);   // Block head belongs in
+    h_word := get_words_position(h_index);
+
+    current_word := get_disc_size(sb);
+    root_word := get_root_location(sb);
+    // h_index = 7, h_block = 896, h_word = 0
+    while current_word > root_word do {
+        //read_block(unit_number, h_block, fb); // read head block
+        for x = h_word to words_per_block do {
+            fb ! h_word := current_word;
+            h_index +:= 1;
+            h_word := get_words_position(h_index); // Word of block that head is
+            current_word -:= 1;
+        }
+        //write_block(unit_number, h_block, fb); // write head block
+        h_block +:= 1; // increment head block
+    }
+    h_index -:= 1;
+
+    // h_index = 5985, h_block = 942, h_word = -1
+    out("h_index = %d, h_block = %d, h_word = %d\n", h_index, h_block, h_word);
+    return;
+}
+
 //let fl_pop(buf, n_blocks) be {
 //    get stack head
 //        get number used blocks
@@ -84,7 +153,8 @@ let create_superblock(unit_number, name) be {
     set_magic(buf);
     set_name(buf, name);
     set_total_capacity(buf, disc_size);
-    set_used_capacity(buf, 0);
+    // Not equal to zero because superblock takes up space
+    set_used_capacity(buf, super_block_blocks + 1);
 
     // Use first block after end of super block store the root directory
     // XXX: this is not accurate since freelist presumed to be usable space
@@ -95,9 +165,7 @@ let create_superblock(unit_number, name) be {
     write_block(unit_number, sb_blocknum, buf);
 
     // Push all chunks onto the free stack
-    // TODO: implement
-    fl_push(unit_number);
-    //fl_push();
+    fl_push_initial(unit_number);
     // TODO: create root directory
 }
 
@@ -121,11 +189,4 @@ let df() be {
 
         disc_no +:= 1;
     } repeat;
-}
-
-// Returns the index of the word at the head of the free list.
-// This word (and the block it refers to) is currently not being used.
-let get_head_pointer(sb) be {
-    let free_capacity = get_total_capacity(sb) - get_used_capacity(sb);
-    resultis blocks_to_words(sb_freelist) + free_capacity;
 }
