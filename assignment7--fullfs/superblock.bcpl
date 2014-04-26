@@ -65,10 +65,10 @@ let get_head_pointer(sb) be {
 
 // Get the block a word is in.
 let get_words_block(word_number) be
-    resultis blocks_to_words(word_number)
+    resultis (word_number / words_per_block)
 // Get a word's position within a block
 let get_words_position(word_number) be
-    resultis (blocks_to_words(word_number) rem words_per_block)
+    resultis (word_number rem words_per_block)
 
 let fl_push(unit_number, block_to_push) be {
     let sb = vec words_per_block;
@@ -102,6 +102,7 @@ let fl_push(unit_number, block_to_push) be {
 let fl_push_initial(unit_number) be {
     let sb = vec words_per_block;
     let fb = vec words_per_block;
+    let eb = vec words_per_block; // EDIT
     let h_index, h_block, h_word, used_cap, current_word, root_word;
     read_superblock(unit_number, sb);
 
@@ -109,23 +110,47 @@ let fl_push_initial(unit_number) be {
     h_block := get_words_block(h_index);   // Block head belongs in
     h_word := get_words_position(h_index);
 
-    current_word := get_disc_size(sb);
+    current_word := get_total_capacity(sb);
     root_word := get_root_location(sb);
+
+    out("current_word = %d, root_word = %d\n", current_word, root_word);
+    out("h_index = %d, h_block = %d, h_word = %d\n", h_index, h_block, h_word);
+
+    read_block(unit_number, h_block, fb);
+
     // h_index = 7, h_block = 896, h_word = 0
     while current_word > root_word do {
-        //read_block(unit_number, h_block, fb); // read head block
-        for x = h_word to words_per_block do {
-            fb ! h_word := current_word;
-            h_index +:= 1;
-            h_word := get_words_position(h_index); // Word of block that head is
-            current_word -:= 1;
+//        read_block(unit_number, h_block, fb); // read head block
+        fb ! h_word := current_word;
+        if (h_word = (words_per_block -1)) then {
+	    write_block(unit_number, h_block, fb);
+	    h_block +:= 1;
+            read_block(unit_number, h_block, fb);
         }
-        //write_block(unit_number, h_block, fb); // write head block
-        h_block +:= 1; // increment head block
+	if (current_word rem 500 = 0) then {
+            out("Pushed 500 words! : ");
+            out("%d\n", fb ! h_word);
+            read_block(unit_number, 0, eb);
+	    out("Did we put something at the bottom of stack : %d\n", eb ! 7);
+        }
+        h_index +:= 1;
+        h_word := get_words_position(h_index);
+        current_word -:= 1;
+
+//        for x = h_word to (words_per_block - 1) do { // EDIT: 7 through 127
+//            fb ! h_word := current_word;
+//            h_index +:= 1;
+//            h_word := get_words_position(h_index); // Word of block that head is
+//            current_word -:= 1;
+//        }
+
     }
     h_index -:= 1;
+    write_block(unit_number, h_block, fb);
 
     // h_index = 5985, h_block = 942, h_word = -1
+    out("sb_size = %d, sb_used_size = %d, sb_root = %d, sb_freelist = %d\n", sb_size, sb_used_size, sb_root, sb_freelist);
+    out("sb_size = %d, sb_used_size = %d, sb_root = %d\n", get_total_capacity(sb), get_used_capacity (sb), get_root_location(sb));
     out("h_index = %d, h_block = %d, h_word = %d\n", h_index, h_block, h_word);
     return;
 }
