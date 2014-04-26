@@ -1,0 +1,27 @@
+export {
+    fl_push//, fl_pop,
+}
+
+
+let fl_push(block_number) be {
+
+}
+
+
+// note, have to get a chunk at a time
+// might as well do well there
+let fl_pop(free_buffer) be {
+//    let current_stack_word;
+//    let used_blocks = get_used_capacity();
+//
+//    current_stack_word := used_blocks / 2;
+//    // if even, get real high
+//    test current_stack_word rem 2 = 0 then {
+//
+//    } else {
+//
+//    }
+//
+//
+//    return
+}
