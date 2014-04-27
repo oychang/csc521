@@ -7,12 +7,14 @@ manifest {
     tape_number_char = tape_prefix_length + 1,
     // Conveniently on boundary
     tape_name_offset = 2,
+
+    heap_size = 2048
 }
 
 // Format of file descriptor table
 manifest {
     // (1) Read/Write flag. Use a word because why the fuck not.
-    fd_type = 0, fd_isfile = 0, fd_isdir = 1,
+    fd_type = 0, fd_nil = 0, fd_isfile = 1, fd_isdir = 2, fd_istape = 3,
     // (2) Current block number
     fd_block = fd_type + 1,
     // (3) Current byte number
@@ -27,14 +29,8 @@ manifest {
     fd_words = fd_buffer + 1, max_fds = 5,
     fd_tab_size = max_fds * fd_words
 }
-static { fd_tab = vec fd_tab_size }
+static { fd_tab = vec fd_tab_size, heap = vec(heap_size) }
 
-// TODO
-let open(file, mode) be {}
-let close(fd) be {}
-let fflush(fd) be {}
-let read(fd, buf, len) be {}
-let write(fd, buf, len) be {}
 
 let mount_tape(fn, mode) be {
     let tape_no, tape;
@@ -49,16 +45,58 @@ let mount_tape(fn, mode) be {
 }
 let read_tape(tape_id, buf) be
     resultis devctl(DC_TAPE_READ, tape_id, buf)
-let write_tape(tape_id, buf, n) ne
+let write_tape(tape_id, buf, n) be
     resultis devctl(DC_TAPE_WRITE, tape_id, buf, n)
 
-let start() be {
-    let buf = vec words_per_block, tape_num;
-    ins(buf, words_per_block);
+let open(file, mode) be {
+    let buf = vec words_per_block;
+    let fd = -1;
+    let tape_num;
 
-    tape_num := mount_tape(buf, 'R');
-    if tape_num /= false then {
-        read_tape(tape_num, buf);
-        out(buf);
+    // Get next available file descriptor for potential use
+    for i = 0 to fd_tab_size by fd_words do {
+        if fd_tab ! i = 0 then {
+            fd := i;
+            break;
+        }
     }
+
+    if fd = -1 then resultis -1;
+    tape_num := mount_tape(file, mode);
+    if tape_num /= false then {
+        fd_tab ! (fd + fd_type) := fd_istape;
+        fd_tab ! (fd + fd_block) := 0;
+        fd_tab ! (fd + fd_byte) := 0;
+        // can't know size ahead of time when dealing with tapes
+        fd_tab ! (fd + fd_size) := -1;
+        fd_tab ! (fd + fd_id) := tape_num;
+        fd_tab ! (fd + fd_buffer) := newvec(words_per_block);
+
+        resultis fd / fd_words;
+    }
+
+    // TODO: do find() and assign fdtable entry to header block
+
+    resultis -1
+}
+// TODO: implement flushing memory buffer to disc
+let fflush(fd) be {}
+// TODO: flush and remove file descriptor data
+let close(fd) be {
+    fflush(fd);
+    fd_tab ! (fd * fd_words) := fd_nil;
+    // free the shitty piece of asd
+    free(fd_tab ! (fd + fd_buffer));
+}
+let read(fd, buf, len) be {}
+let write(fd, buf, len) be {}
+
+let start() be {
+    // uber important
+    init(heap, heap_size);
+    let buf = vec words_per_block, f;
+
+    f := open("/tape/1/stdio.bcpl", 'R');
+    out("%d\n", f);
+    close(f);
 }
