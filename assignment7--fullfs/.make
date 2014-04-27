@@ -16,7 +16,7 @@ BCPLS = (
     'fsutils',
     'superblock',
     'filesystem',
-    # 'nodes',
+    'nodes',
     'msh',
 )
 
@@ -24,7 +24,7 @@ BCPLS = (
 def make():
     '''
     warn: even on failure, bcpl & assemble return 0, so the call
-    checks do nothing
+    checks do nothing (sometimes)
     '''
     fns = list(BCPLS)
 

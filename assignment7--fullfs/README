@@ -1,0 +1,21 @@
+## Superblock
+* First block on disc
+* Contains meta information about disc
+
+## Format
+* Unique number that identifies disc as formatted, 0x34343434
+* Size of filesystem in blocks, e.g. 6000
+* Number of used blocks
+* Location of root directory
+
+## Header Format
+* create time, last modified time
+* directory or file flag
+* size
+* data -- either location of data or directory entries
+
+## Root directory
+* Contains two special directories, `/tape` and `/dev` from which commands like `open("/tape/1/unixfile.txt", 'R')` and `cat /dev/stdout` are possible.
+
+## Data block
+* Just contains a bunch of raw data
