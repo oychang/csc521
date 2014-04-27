@@ -25,6 +25,7 @@ let date() be {
     print_time(buf);
 }
 
+// TODO: exist
 let ls(dir) be {}
 
 manifest { max_command_chars = 256 }
