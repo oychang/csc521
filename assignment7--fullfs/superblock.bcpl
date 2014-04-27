@@ -13,7 +13,7 @@ export {
 
 // Constants for superblock
 manifest {
-    // Location of superblock on disc. NB: blocks are 0-indexed.
+    // Location of superblock on disc. Blocks are 0-indexed.
     sb_blocknum = 0,
     // (1) Magic number to identify filesystem
     sb_magic = 0, sb_magic_value = 0x34343434,
@@ -29,6 +29,7 @@ manifest {
     sb_freelist = sb_root + 1
 }
 
+// Constants for header blocks
 manifest {
     // (1) Name field
     node_name = 0,
@@ -48,7 +49,6 @@ manifest {
     // (6) Current level
     node_level = node_type + 1
 }
-
 
 
 let set_node_name(node, name) be
@@ -242,7 +242,7 @@ let create_superblock(unit_number, name) be {
 
     // Push all chunks onto the free stack
     fl_push_initial(unit_number);
-    // TODO: create root directory
+    // Create root directory
     create_node(unit_number, "/", true, 0);
 }
 
@@ -257,7 +257,7 @@ let df() be {
         if retval <= 0 then break;
 
         read_block(disc_no, sb_blocknum, buf);
-        // TODO: do not show if disc unformatted
+        // fixme: do not show if disc unformatted
         get_name(str, buf);
         out("disc %d: %s\n", disc_no, str);
         out("total size: %d blocks    ", get_total_capacity(buf));
