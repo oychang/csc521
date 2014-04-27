@@ -27,12 +27,18 @@ let mount_tape(fn, mode) be {
     }
     resultis false
 }
+let read_tape(tape_id, buf) be
+    resultis devctl(DC_TAPE_READ, tape_id, buf)
+let write_tape(tape_id, buf, n) ne
+    resultis devctl(DC_TAPE_WRITE, tape_id, buf, n)
 
 let start() be {
     let buf = vec words_per_block, tape_num;
     ins(buf, words_per_block);
 
     tape_num := mount_tape(buf, 'R');
-
-    if tape_num /= false then {}
+    if tape_num /= false then {
+        read_tape(tape_num, buf);
+        out(buf);
+    }
 }
