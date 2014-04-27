@@ -7,20 +7,32 @@ manifest {
     tape_number_char = tape_prefix_length + 1,
     // Conveniently on boundary
     tape_name_offset = 2,
-
-    number_fds = 5,
-    fd_words = 6,
-    fdtab_size = number_fds * fd_words
 }
 
-static {
-    fdtab = vec fdtab_size
-}
+// Format of file descriptor table
+manifest {
+    // (1) Read/Write flag. Use a word because why the fuck not.
+    fd_type = 0, fd_isfile = 0, fd_isdir = 1,
+    // (2) Current block number
+    fd_block = fd_type + 1,
+    // (3) Current byte number
+    fd_byte = fd_block + 1,
+    // (4) Total size
+    fd_size = fd_byte + 1,
+    // (5) Unique Identifier
+    fd_id = fd_size + 1,
+    // (6) Buffer Pointer
+    fd_buffer = fd_id + 1,
 
+    fd_words = fd_buffer + 1, max_fds = 5,
+    fd_tab_size = max_fds * fd_words
+}
+static { fd_tab = vec fd_tab_size }
+
+// TODO
 let open(file, mode) be {}
 let close(fd) be {}
 let fflush(fd) be {}
-
 let read(fd, buf, len) be {}
 let write(fd, buf, len) be {}
 
