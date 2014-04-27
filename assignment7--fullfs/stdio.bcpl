@@ -45,6 +45,7 @@ let mount_tape(fn, mode) be {
 }
 let read_tape(tape_id, buf) be
     resultis devctl(DC_TAPE_READ, tape_id, buf)
+// Note, takes n = number of characters
 let write_tape(tape_id, buf, n) be
     resultis devctl(DC_TAPE_WRITE, tape_id, buf, n)
 
@@ -83,34 +84,35 @@ let open(file, mode) be {
 let fflush(fd) be {}
 // TODO: flush and remove file descriptor data
 let close(fd) be {
+    if fd = -1 then return;
     fflush(fd);
     fd_tab ! (fd * fd_words) := fd_nil;
     // free the shitty piece of asd
     freevec(fd_tab ! (fd + fd_buffer));
 }
-// TODO
+// TODO: deal with not-tapes
 let read(fd, buf, len) be {
     if fd_tab ! (fd + fd_type) = fd_istape then {
         resultis read_tape(fd_tab ! (fd + fd_id), buf);
     }
 }
-// TODO
-let write(fd, buf, len) be {}
+// TODO: deal with non-tapes
+let write(fd, buf, len) be {
+    if fd_tab ! (fd + fd_type) = fd_istape then {
+        write_tape(fd_tab ! (fd + fd_id), buf, len);
+    }
+}
 
 let start() be {
-    let buf = vec words_per_block;
+    let buf = "abcdefg";
     let f;
 
     // uber important
     init(heap, heap_size);
 
-    f := open("/tape/1/stdio.bcpl", 'R');
+    f := open("/tape/1/stdio2.bcpl", 'W');
     if f /= -1 then {
-        while read(f, buf, words_per_block) /= 0 then {
-            outs(buf);
-        }
-
-        out(buf);
+        write(f, buf, strlen(buf));
     }
 
     close(f);
