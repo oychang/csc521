@@ -2,6 +2,14 @@ import "io"
 import "conversion"
 import "fsutils"
 
+export {
+    // Must be called before anything else even thought about.
+    init_stdio,
+    mount_tape,
+    open, fflush, close,
+    read, write
+}
+
 manifest {
     tape_prefix_length = 5,
     tape_number_char = tape_prefix_length + 1,
@@ -102,17 +110,5 @@ let write(fd, buf, len) be {
     }
 }
 
-let start() be {
-    let buf = "abcdefg";
-    let f;
-
-    // uber important
+let init_stdio() be
     init(heap, heap_size);
-
-    f := open("/tape/1/stdio2.bcpl", 'W');
-    if f /= -1 then {
-        write(f, buf, strlen(buf));
-    }
-
-    close(f);
-}
