@@ -74,7 +74,7 @@ let get_words_position(word_number) be
 let fl_push(unit_number, block_to_push) be {
     let sb = vec words_per_block;
     let fb = vec words_per_block;
-    let h_index, h_block, h_word, current_word, root_word;
+    let h_index, h_block, h_word, current_word, root_word, used_cap;
     read_superblock(unit_number, sb);
 
     h_index := get_head_pointer(sb);          // Index of word at head of free list
@@ -134,17 +134,34 @@ let fl_push_initial(unit_number) be {
     return;
 }
 
-// let fl_pop(buf, n_blocks) be {
-      // get stack head
-      //     get number used blocks
-      //     word at head of stack :=
-      //         blocks_to_words(sb_root) - number used blocks
-      //
-      // let i = stack_head
-      // from n_blocks to 0 do
-      //     buf.append(freelist[i])
-      //     i++
-// }
+let fl_pop(buf) be {
+    let sb = vec words_per_block;
+    let fb = vec words_per_block;
+    let h_index, h_block, h_word, used_cap;
+    read_superblock(unit_number, sb);
+
+    h_index := get_head_pointer(sb); // Index of word at head of free list
+    h_block := get_words_block(h_index); // Block head belongs in
+    h_word := get_words_position(h_index); // Word of that block that head is
+
+    used_cap := get_used_capacity(sb) + 1; // Number of used blocks
+    set_used_capacity(sb, used_cap);
+    write_superblock(unit_number, sb);
+
+    read_block(unit_number, h_block, fb);
+    resultis (fb ! h_word);
+
+    // get stack head
+       
+    //     get number used blocks
+    //     word at head of stack :=
+    //         blocks_to_words(sb_root) - number used blocks
+    //
+    // let i = stack_head
+    // from n_blocks to 0 do
+    //     buf.append(freelist[i])
+    //     i++
+}
 
 let create_superblock(unit_number, name) be {
     let buf = vec words_per_block, disc_size;
