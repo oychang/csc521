@@ -1,21 +1,59 @@
-## Superblock
-* First block on disc
-* Contains meta information about disc
+# Full Disc File System, CSC 521 -- April 26, 2014
 
-## Format
-* Unique number that identifies disc as formatted, 0x34343434
-* Size of filesystem in blocks, e.g. 6000
-* Number of used blocks
-* Location of root directory
+Joseph Choi & Oliver Chang
 
-## Header Format
-* create time, last modified time
-* directory or file flag
-* size
-* data -- either location of data or directory entries
+# Compiling
 
-## Root directory
-* Contains two special directories, `/tape` and `/dev` from which commands like `open("/tape/1/unixfile.txt", 'R')` and `cat /dev/stdout` are possible.
+Can be done with bsd/gnu `make`. Make sure that the file `.make` exists in
+addition to the Makefile.
 
-## Data block
-* Just contains a bunch of raw data
+Running the program is done by running `run msh` and performing a commnad.
+There are a bunch of *.bcpl files and other stuff...these files
+should be included:
+
+$ tree -a
+.
+├── conversion.bcpl (conversion utilities)
+├── filesystem.bcpl (wrappers for creating filesystem)
+├── fsutils.bcpl (misc. stdlib-esque functions)
+├── .make (actual python makefile)
+├── Makefile (makefile)
+├── msh.bcpl (the murrell shell)
+├── README (this)
+├── stdio.bcpl (stdio.h-esque functions)
+└── superblock.bcpl (superblock & freelist implementation)
+
+
+## The Good
+
+* Working free list, disk allocation
+* Bunch of tiny functions
+* Tape read/write
+* Interaction with, format of superblock
+* File descriptors
+
+## The Bad
+
+* file descriptors do not interact with non-tapes or stdin/stdout
+* file descriptors do not use buffers or size checks => fflush() not implemented
+* pushes/pops for the freelist each take a read and a write for each thing
+* freelist is not have an in-memory cache
+* file descriptors use the builtin freevec()/newvec() implementations
+
+## The Ugly
+
+* directory creation/deletion not implemented
+
+    Trouble with path names...hard to build up based on parents/children.
+    Most of all, ran out of time.
+
+* file creation/deletion not implemented
+
+    Although working freelist stuff, haven't nailed down format
+    of data fields of the header blocks (called nodes here).
+
+* n-levels not implemented
+
+    Ran out of time.
+    Don't anticipate that copying should be too much of a pain.
+    Already have fields in headers dedicated to keeping track of levels.
