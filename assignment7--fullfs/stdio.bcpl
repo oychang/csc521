@@ -94,7 +94,6 @@ let close(fd) be {
     if fd = -1 then return;
     fflush(fd);
     fd_tab ! (fd * fd_words) := fd_nil;
-    // free the shitty piece of asd
     freevec(fd_tab ! (fd + fd_buffer));
 }
 // TODO: deal with not-tapes

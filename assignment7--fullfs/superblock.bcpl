@@ -213,11 +213,17 @@ let create_node(disc_no, name, is_dir, size) be {
 
     write_block(disc_no, block_number, buf);
 }
+
 // TODO
-let add_data(node, buf) be {}
-let deepen_level() be {}
+let add_data(node, buf) be {
+}
+// TODO
+let deepen_level() be {
+}
+// TODO
 // Let node be the block with header stuff
-let add_level(disc_no, node) be {}
+let add_level(disc_no, node) be {
+}
 
 let create_superblock(unit_number, name) be {
     let buf = vec words_per_block, disc_size;

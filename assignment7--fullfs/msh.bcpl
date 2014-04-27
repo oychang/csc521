@@ -25,15 +25,22 @@ let date() be {
     print_time(buf);
 }
 
-// TODO: exist
+// TODO: be a thing that exists
 let ls(dir) be {}
+
+// TODO: tape read/write function implementations
+let tread() be {
+}
+
+let twrite() be {
+}
 
 manifest { max_command_chars = 256 }
 let start() be {
 	let buf = vec max_command_chars;
 
     // XXX: ensure that this remains up to date
-    outs("commands: format, df, date\n");
+    outs("commands: format, df, date, tread, twrite\n");
     {
         out("$ ");
         ins(buf, max_command_chars);
@@ -44,6 +51,10 @@ let start() be {
             df();
         } else test strcmp(buf, "date") then {
             date();
+        } else test strcmp(buf, "tread") then {
+            tread();
+        } else test strcmp(buf, "twrite") then {
+            twrite();
         } else {
             finish;
         }
