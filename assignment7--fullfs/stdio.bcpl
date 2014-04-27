@@ -6,7 +6,15 @@ manifest {
     tape_prefix_length = 5,
     tape_number_char = tape_prefix_length + 1,
     // Conveniently on boundary
-    tape_name_offset = 2
+    tape_name_offset = 2,
+
+    number_fds = 5,
+    fd_words = 6,
+    fdtab_size = number_fds * fd_words
+}
+
+static {
+    fdtab = vec fdtab_size
 }
 
 let open(file, mode) be {}
