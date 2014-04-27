@@ -106,7 +106,9 @@ let get_root_location(buf) be
 // This word (and the block it refers to) is currently not being used.
 let get_head_pointer(sb) be {
     let free_capacity = get_total_capacity(sb) - get_used_capacity(sb);
-    resultis blocks_to_words(sb_freelist) + free_capacity;
+    // TODO: changing the one line below causes extra stuff to appear via od
+    resultis (sb_freelist - 1) + free_capacity;
+    // resultis blocks_to_words(sb_freelist) + free_capacity;
 }
 
 // Get the block a word is in.
@@ -169,7 +171,6 @@ let fl_push_initial(unit_number) be {
     }
     h_index -:= 1;
     write_block(unit_number, h_block, fb);
-    out("h_block: %d\n", h_block);
 
     return;
 }
