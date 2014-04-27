@@ -86,17 +86,32 @@ let close(fd) be {
     fflush(fd);
     fd_tab ! (fd * fd_words) := fd_nil;
     // free the shitty piece of asd
-    free(fd_tab ! (fd + fd_buffer));
+    freevec(fd_tab ! (fd + fd_buffer));
 }
-let read(fd, buf, len) be {}
+// TODO
+let read(fd, buf, len) be {
+    if fd_tab ! (fd + fd_type) = fd_istape then {
+        resultis read_tape(fd_tab ! (fd + fd_id), buf);
+    }
+}
+// TODO
 let write(fd, buf, len) be {}
 
 let start() be {
+    let buf = vec words_per_block;
+    let f;
+
     // uber important
     init(heap, heap_size);
-    let buf = vec words_per_block, f;
 
     f := open("/tape/1/stdio.bcpl", 'R');
-    out("%d\n", f);
+    if f /= -1 then {
+        while read(f, buf, words_per_block) /= 0 then {
+            outs(buf);
+        }
+
+        out(buf);
+    }
+
     close(f);
 }
