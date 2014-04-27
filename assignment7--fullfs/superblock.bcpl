@@ -134,7 +134,7 @@ let fl_push_initial(unit_number) be {
     return;
 }
 
-let fl_pop(buf) be {
+let fl_pop(unit_number) be {
     let sb = vec words_per_block;
     let fb = vec words_per_block;
     let h_index, h_block, h_word, used_cap;
