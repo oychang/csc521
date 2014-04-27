@@ -2,7 +2,10 @@ import "io"
 import "filesystem"
 import "fsutils"
 import "superblock"
-//import "stdio"
+import "stdio"
+
+manifest { max_command_chars = 256 }
+
 
 let format() be {
     let s, name = vec 3;
@@ -28,19 +31,36 @@ let date() be {
 // TODO: be a thing that exists
 let ls(dir) be {}
 
-// TODO: tape read/write function implementations
 let tread() be {
+    let in = vec max_command_chars;
+    let f;
+
+    outs("read from tape\n");
+    outs("tapes are read by formatting with the tape number and unix filename\n");
+    outs("e.g., `/tape/1/README` opens that file if it exists\n");
+    outs("fn? > ");
+
+    ins(in, max_command_chars);
+    f := open(in, 'R');
+    if f = -1 then {
+        outs("could not open that file\n");
+        return;
+    }
+
+    while read(f, in, max_command_chars) /= 0 do {
+        outs(in);
+    }
 }
 
 let twrite() be {
 }
 
-manifest { max_command_chars = 256 }
 let start() be {
-	let buf = vec max_command_chars;
+    let buf = vec max_command_chars;
+    init_stdio();
 
     // XXX: ensure that this remains up to date
-    outs("commands: format, df, date, tread, twrite\n");
+    outs("commands: format, df, date, tread, twrite, [other to exit]\n");
     {
         out("$ ");
         ins(buf, max_command_chars);

@@ -16,6 +16,7 @@ BCPLS = (
     'fsutils',
     'superblock',
     'filesystem',
+    'stdio',
     'msh',
 )
 
