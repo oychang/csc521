@@ -204,7 +204,7 @@ let create_node(disc_no, name, is_dir, size) be {
     let block_number = fl_pop();
     let buf = vec words_per_block;
 
-    set_name(buf, name);
+    set_node_name(buf, name);
     set_size(buf, size);
     set_ctime(buf);
     set_mtime(buf);
