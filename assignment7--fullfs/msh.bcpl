@@ -50,9 +50,29 @@ let tread() be {
     while read(f, in, max_command_chars) /= 0 do {
         outs(in);
     }
+    close(f);
 }
 
 let twrite() be {
+    let in = vec max_command_chars;
+    let f;
+
+    outs("write from tape\n");
+    outs("tapes are read by formatting with the tape number and unix filename\n");
+    outs("e.g., `/tape/1/README` opens that file if it exists\n");
+    outs("fn? > ");
+
+    ins(in, max_command_chars);
+    f := open(in, 'W');
+    if f = -1 then {
+        outs("could not open that file\n");
+        return;
+    }
+
+    outs("what to write?\n> ");
+    ins(in, max_command_chars);
+    write(f, in, strlen(in));
+    close(f);
 }
 
 let start() be {
