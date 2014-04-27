@@ -1,7 +1,7 @@
 import "io"
 import "fsutils"
 import "conversion"
-//import "nodes"
+import "nodes"
 
 export {
     create_superblock,
@@ -176,6 +176,7 @@ let create_superblock(unit_number, name) be {
     // Push all chunks onto the free stack
     fl_push_initial(unit_number);
     // TODO: create root directory
+    create_node(unit_number, "/", true, 0);
 }
 
 let df() be {
