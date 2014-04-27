@@ -2,7 +2,6 @@ import "io"
 import "filesystem"
 import "fsutils"
 import "superblock"
-//import "nodes"
 //import "stdio"
 
 let format() be {
