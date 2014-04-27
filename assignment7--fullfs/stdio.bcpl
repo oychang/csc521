@@ -82,7 +82,6 @@ let open(file, mode) be {
 }
 // TODO: implement flushing memory buffer to disc
 let fflush(fd) be {}
-// TODO: flush and remove file descriptor data
 let close(fd) be {
     if fd = -1 then return;
     fflush(fd);
