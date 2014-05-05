@@ -1,0 +1,110 @@
+import "io"
+
+export {
+  perror, ins, strcmp, strncmp, strncpy,
+  get_physical_disc_size,
+  read_block, write_block,
+  get_current_time, print_time
+}
+
+// All of these values come from the detailed emulator documentation.
+let perror(code) be {
+  switchon code into {
+  case -2:
+    outs("ERR_READ_PARAMS\n");
+    endcase;
+  case -3:
+    out("ERR_DEV_NUMBER\n");
+    endcase;
+  case -4:
+    out("ERR_POSITION\n");
+    endcase;
+  case -5:
+    out("ERR_MEMORY\n");
+    endcase;
+  case -6:
+    out("ERR_DEV_FAILED\n");
+    endcase;
+  case -7:
+    out("ERR_NOT_FOUND\n");
+    endcase;
+  case -8:
+    out("ERR_BAD_PARAM\n");
+    endcase;
+  default:
+    out("unknown error code\n");
+  }
+}
+
+// straight up copy-pasted
+// http://rabbit.eng.miami.edu/class/een521/samples/r2.b
+let ins(string, veclen) be
+{ let max = (veclen-1)*4;
+  let length = 0;
+
+  while length < max do
+  { let c = inch();
+    if c = '\n' then break;
+    byte length of string := c;
+    length +:= 1 }
+
+  byte length of string := 0;
+  resultis string }
+
+// Compare null-terminated strings a and b
+manifest { max_file_name_bytes = 512 }
+let strcmp(a, b) be {
+  for i = 0 to max_file_name_bytes do {
+    let ac = byte i of a;
+    let bc = byte i of b;
+    if ac /= bc then
+      resultis false;
+    if ac = 0 /\ bc = 0 then resultis true; }
+  resultis false }
+let strncmp(a, b, n) be {
+  for i = 0 to (n-1) do {
+    let ac = byte i of a;
+    let bc = byte i of b;
+    if ac /= bc then
+      resultis false;
+    if ac = 0 /\ bc = 0 then resultis true; }
+  resultis true }
+
+// Copy up to 0..n-1 bytes into addr
+// Guaranteed that n-1th byte is 0
+let strncpy(dest, str, n) be {
+  for i = 0 to (n*4)-2 do {
+    byte i of dest := byte i of str;
+  }
+  byte (n*4)-1 of dest := 0;
+  return
+}
+
+let get_physical_disc_size(unit_number) be
+    resultis devctl(DC_DISC_CHECK, unit_number)
+let read_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_READ, disc_unit, block, 1, buf);
+let write_block(disc_unit, block, buf) be
+    resultis devctl(DC_DISC_WRITE, disc_unit, block, 1, buf);
+
+let get_current_time(buf) be
+    datetime2(buf)
+let print_time(compressed_time) be {
+    let v0 = compressed_time ! 0;
+    let v1 = compressed_time ! 1;
+
+    let year = selector 13 : 19;
+    let month = selector 4 : 15;
+    let day = selector 5 : 7;
+
+    let hour = selector 5 : 27;
+    let minute = selector 6 : 21;
+    let second = selector 6 : 15;
+    let millisecond = selector 10 : 5;
+
+    out("%d/%d/%d", month from v0, day from v0, year from v0);
+    outs(", ");
+    out("%d:%02d:%02d.%d", hour from v1, minute from v1,
+        second from v1, millisecond from v1);
+    out("\n");
+}
