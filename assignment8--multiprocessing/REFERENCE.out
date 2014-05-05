@@ -1,0 +1,24 @@
+first free page = 2 = 0x2
+last free page = 511 = 0x1FF
+pp 2:
+// ptabusr = user space
+  0: pp 3 for VAs 0x0 to 0x3FFFFF:
+    0: pp 0 for VAs 0x0 to 0x7FF:
+    1: pp 1 for VAs 0x800 to 0xFFF:
+// ptabusrstk = user stack
+  511: pp 4 for VAs 0x7FC00000 to 0x7FFFFFFF:
+    2047: pp 1048575 for VAs 0x7FFFF800 to 0x7FFFFFFF:
+// ptabsysstk = system stack
+  767: pp 5 for VAs 0xBFC00000 to 0xBFFFFFFF:
+    2047: pp 6 for VAs 0xBFFFF800 to 0xBFFFFFFF:
+Dangerous place
+still alive
+page fault for VA 0x7FFFF7FF
+  page table 0x1FF = 511
+  page 0x7FE = 2046
+  pdbr = 0x1000 (page 2 + 0)
+  pd entry = 0x2001
+  pt entry = 0x0
+  using page 7
+twotimes(500) = 1000
+(exit)
