@@ -105,7 +105,6 @@ let printmemmap(pdpn) be
           let baseva = (ptn << 22) + (pn << 11);
           out("    %d: pp %d for VAs 0x%x to 0x%x:\n", pn, pppn, baseva, baseva+2047); } } }
 
-
 let dop(exes) be {
   let addr = dop + 2000;
   if load_program(exes, addr) = false then return;
@@ -175,7 +174,6 @@ let start() be
   {
     out("$ ");
     ins(buf, maxs);
-
     test strcmp(buf, "") then {
       finish;
     } else test strcmp(buf, "time") then {
@@ -185,4 +183,4 @@ let start() be
     }
   } repeat;
 
-}
+  return }
