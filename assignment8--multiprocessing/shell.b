@@ -150,8 +150,8 @@ let start() be
   ptabusrstk ! 2047 := 0x7FFFF801;
   ptabsysstk ! 2047 := sysstkpage bitor 1;
 
-  //page := (pdir ! 0) + 0x400;
-  //load_program("test.exe", page);
+  page := (ptabusr ! 0) + 0x400;
+  load_program("test.exe", page);
 
   outs("Dangerous place\n");
   assembly
@@ -168,8 +168,8 @@ let start() be
     load   sp, r2
     load   fp, r3 }
 
-  //func := getfn(0x400);
-  //func();
+  func := getfn(0x400);
+  func();
 
   {
     out("$ ");
