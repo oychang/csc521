@@ -28,3 +28,10 @@ let load_program(fn, addr) be {
   devctl(DC_TAPE_UNLOAD, default_tape);
   resultis true
 }
+
+//let start() be {
+//  let func;
+//  load_program("test.exe", ! 0x101);
+//  func := getfn(!0x101);
+//  func();
+//}
