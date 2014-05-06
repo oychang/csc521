@@ -105,11 +105,24 @@ let printmemmap(pdpn) be
           let baseva = (ptn << 22) + (pn << 11);
           out("    %d: pp %d for VAs 0x%x to 0x%x:\n", pn, pppn, baseva, baseva+2047); } } }
 
-let start2() be
+
+let dop(exes) be {
+  let addr = dop + 2000;
+  if load_program(exes, addr) = false then return;
+  addr := getfn(addr);
+  addr();
+}
+
+manifest { maxs = 128 }
+let start() be
 { let pdir, ptabusr, ptabusrstk, ptabsysstk;
   let sysstkpage;
   let lastusedpage = ((! 0x101) - 1) >> 11;
   let func, page;
+  let buf = vec maxs;
+  let cgv = vec 10;
+  setup_syscalls(cgv);
+
   getpage("setup!");
   pdir := getpage();
   ptabusr := getpage();
@@ -138,10 +151,8 @@ let start2() be
   ptabusrstk ! 2047 := 0x7FFFF801;
   ptabsysstk ! 2047 := sysstkpage bitor 1;
 
-  page := (pdir ! 0) + 0x400;
-  load_program("test.exe", page);
-
-  printmemmap(pdir >> 11);
+  //page := (pdir ! 0) + 0x400;
+  //load_program("test.exe", page);
 
   outs("Dangerous place\n");
   assembly
@@ -158,22 +169,8 @@ let start2() be
     load   sp, r2
     load   fp, r3 }
 
-  func := getfn(0x400);
-  func();
-}
-
-let dop(exes) be {
-  let addr = dop + 2000;
-  if load_program(exes, addr) = false then return;
-  addr := getfn(addr);
-  addr();
-}
-
-let start() be {
-  manifest { maxs = 128 }
-  let buf = vec maxs;
-  let cgv = vec 10;
-  setup_syscalls(cgv);
+  //func := getfn(0x400);
+  //func();
 
   {
     out("$ ");
@@ -186,6 +183,6 @@ let start() be {
     } else {
       dop(buf);
     }
-
   } repeat;
+
 }
