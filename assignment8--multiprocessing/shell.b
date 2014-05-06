@@ -1,5 +1,6 @@
 import "io"
 import "fsutils"
+import "syscall"
 import "tape"
 
 manifest
@@ -171,6 +172,8 @@ let dop(exes) be {
 let start() be {
   manifest { maxs = 128 }
   let buf = vec maxs;
+  let cgv = vec 10;
+  setup_syscalls(cgv);
 
   {
     out("$ ");
@@ -178,6 +181,8 @@ let start() be {
 
     test strcmp(buf, "") then {
       finish;
+    } else test strcmp(buf, "time") then {
+      out("%d\n", time());
     } else {
       dop(buf);
     }

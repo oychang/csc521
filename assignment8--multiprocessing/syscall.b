@@ -1,5 +1,7 @@
 import "io"
 
+export{ callsysc, time, shutdown, setup_syscalls }
+
 // manifest declarations of all sys calls being set up
 manifest
 { sys_datetime = 1,	sys_shutdown = 2 }
@@ -39,11 +41,11 @@ let setup_syscalls(cgv) be
   { load	r1, [<cgv>]
     setsr	r1, $cgbr
     load	r1, 3
-    setsr	r1, $cglen } } 
+    setsr	r1, $cglen } }
 
-let start() be
-{ let cgv = vec 10, x;
-  setup_syscalls(cgv);
-  x := time();
-  out("start: The compacted time is: %d\n", x);
-  shutdown() }
+//let start() be
+//{ let cgv = vec 10, x;
+//  setup_syscalls(cgv);
+//  x := time();
+//  out("start: The compacted time is: %d\n", x);
+//  shutdown() }
