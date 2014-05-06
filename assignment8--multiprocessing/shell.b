@@ -31,8 +31,9 @@ let otherhandler(intcode, address, info) be
 { out("interrupt %d (%x, %d)\n", intcode, address, info);
   ireturn }
 
+// no fs to flush, so we do this
 let halthandler(intcode, address, info) be
-{ out("(exit)\n");    // this is where the process would be deleted
+{ out("(exit)\n");
   assembly
   { halt } }
 
@@ -117,6 +118,7 @@ let printmemmap(pdpn) be
           let baseva = (ptn << 22) + (pn << 11);
           out("    %d: pp %d for VAs 0x%x to 0x%x:\n", pn, pppn, baseva, baseva+2047); } } }
 
+// fixme: does not work
 let dop(exes) be {
   let addr = dop + 2000;
   if load_program(exes, addr) = false then return;
