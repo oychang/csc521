@@ -1,6 +1,6 @@
 import "io"
 
-export{ callsysc, time, shutdown, setup_syscalls }
+export{ callsysc, time, shutdown, setup_syscalls, update_time }
 
 // manifest declarations of all sys calls being set up
 manifest
@@ -20,6 +20,13 @@ let callsysc(code, arg1) be
 let print_system_time() be
 { out("The current time is: %2d:%02d:%02d\n", sys_hour, sys_min, sys_sec) }
 
+let update_time() be
+{ if sys_sec = 59 then
+  { if sys_min = 59 then
+    { sys_hour := (sys_hour + 1) rem 24 }
+    sys_min := (sys_min + 1) rem 60 }
+  sys_sec := (sys_sec + 1) rem 60 }
+
 let time() = callsysc(sys_datetime)
 let shutdown() = callsysc(sys_shutdown)
 
@@ -31,6 +38,9 @@ let sysc1 (code, reg_num, reg_val) be
   sys_min := selector 6 : 21 from v1;
   sys_sec := selector 6 : 15 from v1;
   print_system_time();
+  assembly
+  { load  r1, 25000
+    setsr r1, $timer }
   ireturn }
 
 let sysc2 (code, reg_num, reg_val) be
@@ -53,4 +63,8 @@ let setup_syscalls(cgv) be
 //{ let cgv = vec 10, x;
 //  setup_syscalls(cgv);
 //  time();
+//  for i = 1 to 20 do
+//    assembly { pause }
+//  update_time();
+//  print_system_time();
 //  shutdown() }

@@ -36,6 +36,18 @@ let halthandler(intcode, address, info) be
   assembly
   { halt } }
 
+let timer_handler(intcode, address, info) be
+{ static { handler_ticks = 2 }
+  test handler_ticks = 0 then
+  { update_time();
+    handler_ticks := 1 }
+  else
+  { handler_ticks -:= 1 }
+  assembly
+  { load  r1, 25000
+    setsr r1, $timer }
+  ireturn }
+
 let getpage(x) be
 { static { nextfreepage = 0, lastfreepage = 0 }
   test numbargs() > 0 then
@@ -131,7 +143,10 @@ let start() be
 
   set_handler(iv_pagefault, pfhandler);
   set_handler(iv_halt, halthandler);
+  set_handler(iv_timer, timer_handler);
   int_enable();
+
+  time();
 
   for i = 0 to 2047 do
   { pdir       ! i := 0;
@@ -151,7 +166,7 @@ let start() be
   ptabsysstk ! 2047 := sysstkpage bitor 1;
 
   page := (ptabusr ! 0) + 0x400;
-  load_program("test.exe", page);
+//  load_program("test.exe", page);
 
   outs("Dangerous place\n");
   assembly
@@ -168,8 +183,8 @@ let start() be
     load   sp, r2
     load   fp, r3 }
 
-  func := getfn(0x400);
-  func();
+//  func := getfn(0x400);
+//  func();
 
   {
     out("$ ");
