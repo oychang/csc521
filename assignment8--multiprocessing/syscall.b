@@ -39,7 +39,7 @@ let sysc1 (code, reg_num, reg_val) be
   sys_sec := selector 6 : 15 from v1;
   print_system_time();
   assembly
-  { load  r1, 25000
+  { load  r1, 27000
     setsr r1, $timer }
   ireturn }
 

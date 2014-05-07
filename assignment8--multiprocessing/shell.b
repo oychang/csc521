@@ -38,14 +38,14 @@ let halthandler(intcode, address, info) be
   { halt } }
 
 let timer_handler(intcode, address, info) be
-{ static { handler_ticks = 2 }
+{ static { handler_ticks = 1 }
   test handler_ticks = 0 then
   { update_time();
     handler_ticks := 1 }
   else
   { handler_ticks -:= 1 }
   assembly
-  { load  r1, 25000
+  { load  r1, 27000
     setsr r1, $timer }
   ireturn }
 
