@@ -194,7 +194,7 @@ let start() be
     test strcmp(buf, "") then {
       finish;
     } else test strcmp(buf, "time") then {
-      out("%d\n", time());
+      time();
     } else {
       //dop(buf); // todo: run program
     }
